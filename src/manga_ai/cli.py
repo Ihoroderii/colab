@@ -18,6 +18,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--panel-gap", type=int)
     parser.add_argument("--panel-width-jitter", type=float, help="0..0.95 random +/- variation around base panel width")
     parser.add_argument("--canvas-bg", help="Canvas background color (e.g., #111111 or 'white')")
+    parser.add_argument("--panel-border-width", type=int, help="Border width in pixels around each panel (0 to disable)")
+    parser.add_argument("--panel-border-color", help="Border color (e.g., #000000)")
+    # Square panels
+    sp = parser.add_mutually_exclusive_group()
+    sp.add_argument("--square-panels", dest="square_panels", action="store_true", help="Make each panel square by padding")
+    sp.add_argument("--no-square-panels", dest="square_panels", action="store_false")
+    parser.set_defaults(square_panels=None)
+    parser.add_argument("--square-size", type=int, help="Square size in px; if omitted, use computed target width per panel")
+    parser.add_argument("--square-fill-color", help="Fill color for square padding (e.g., #ffffff)")
+    sp2 = parser.add_mutually_exclusive_group()
+    sp2.add_argument("--same-panel-size", dest="same_panel_size", action="store_true", help="Use a single fixed size for all panels in a run")
+    sp2.add_argument("--no-same-panel-size", dest="same_panel_size", action="store_false")
+    parser.set_defaults(same_panel_size=None)
     apw = parser.add_mutually_exclusive_group()
     apw.add_argument("--auto-panel-width", dest="auto_panel_width", action="store_true", help="Auto compute panel width from scene/speech (default)")
     apw.add_argument("--no-auto-panel-width", dest="auto_panel_width", action="store_false", help="Disable auto width; use --panel-width")
@@ -41,6 +54,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tone")
     parser.add_argument("--protagonist")
     parser.add_argument("--antagonist")
+    parser.add_argument("--randomize", action="store_true", help="Randomize scenario elements in fallback mode")
+    parser.add_argument("--no-randomize", dest="randomize", action="store_false")
+    parser.set_defaults(randomize=None)
+    parser.add_argument("--seed", type=int, help="Random seed for reproducibility (fallback mode)")
     # Validation
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--val-threshold", type=float)
@@ -73,6 +90,16 @@ def update_config_from_args(config: Config, args: argparse.Namespace) -> Config:
     if "panel_gap" in a: config.style.panel_gap = a["panel_gap"]
     if "panel_width_jitter" in a: config.style.panel_width_jitter = a["panel_width_jitter"]
     if "canvas_bg" in a: config.style.canvas_bg = a["canvas_bg"]
+    if "panel_border_width" in a: config.style.panel_border_width = a["panel_border_width"]
+    if "panel_border_color" in a: config.style.panel_border_color = a["panel_border_color"]
+    if "square_panels" in a and a["square_panels"] is not None:
+        config.style.square_panels = a["square_panels"]
+    if "square_size" in a:
+        config.style.square_size = a["square_size"]
+    if "square_fill_color" in a:
+        config.style.square_fill_color = a["square_fill_color"]
+    if "same_panel_size" in a and a["same_panel_size"] is not None:
+        config.style.same_panel_size = a["same_panel_size"]
     if "auto_panel_width" in a and a["auto_panel_width"] is not None:
         config.style.auto_panel_width = a["auto_panel_width"]
     if "apply_dramatic_lightning" in a:  # handle typo-safe
@@ -98,6 +125,10 @@ def update_config_from_args(config: Config, args: argparse.Namespace) -> Config:
     if "tone" in a: config.scenario.tone = a["tone"]
     if "protagonist" in a: config.scenario.protagonist = a["protagonist"]
     if "antagonist" in a: config.scenario.antagonist = a["antagonist"]
+    if "randomize" in a and a["randomize"] is not None:
+        config.scenario.randomize = a["randomize"]
+    if "seed" in a:
+        config.scenario.random_seed = a["seed"]
     # Validation
     if "validate" in a: config.validation.enabled = a["validate"]
     if "val_threshold" in a: config.validation.similarity_threshold = a["val_threshold"]

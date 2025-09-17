@@ -93,6 +93,12 @@ def _draw_pose(keypoints, size=512):
     return Image.fromarray(cv2.cvtColor(skeleton, cv2.COLOR_BGR2RGB))
 
 
+def _round_to_multiple(x: int, base: int = 8) -> int:
+    if base <= 1:
+        return x
+    return max(base, int(x // base * base))
+
+
 def _estimate_base_width(style_cfg, scene_prompt: str, speech_text: str) -> int:
     # Heuristic:
     # - Start from declared base (default 800)
@@ -166,13 +172,9 @@ def _generate_panel(config: Config, context: str, scene_prompt: str, speaker: st
     generator = torch.Generator(device=device).manual_seed(seed)
 
     prompt, negative_prompt = get_manhwa_prompts(context, scene_prompt)
-    result_img = pipeline(
-        prompt=prompt,
-        negative_prompt=negative_prompt,
-        guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
-        num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
-        generator=generator,
-    ).images[0]
+
+    # Decide target sizing strategy
+    square_mode = bool(getattr(config.style, "square_panels", False))
 
     # Compute base width (auto or fixed)
     if getattr(config.style, "auto_panel_width", True):
@@ -190,9 +192,46 @@ def _generate_panel(config: Config, context: str, scene_prompt: str, speaker: st
     else:
         target_width = base_width
 
+    # If square mode: set generation width/height to square, accounting for border width
+    gen_kwargs = {}
+    if square_mode:
+        # Prefer a fixed runtime side if provided (same size across panels)
+        runtime_side = getattr(config.style, "runtime_square_size", None)
+        if runtime_side:
+            side = int(runtime_side)
+        else:
+            side_cfg = getattr(config.style, "square_size", None)
+            side = int(side_cfg) if side_cfg else int(target_width)
+        bw = int(getattr(config.style, "panel_border_width", 0) or 0)
+        gen_side = max(256, side - 2 * max(0, bw))
+        # Align to multiples of 8 for SD pipelines
+        gen_side = _round_to_multiple(gen_side, 8)
+        gen_kwargs.update({"width": gen_side, "height": gen_side})
+
+    result_img = pipeline(
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+        guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
+        num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
+        generator=generator,
+        **gen_kwargs,
+    ).images[0]
+
     styler = ManhwaStyler()
-    result_img = styler.adjust_panel(result_img, target_width=target_width)
+    # If not square mode, do the classic aspect-based resize. Square mode already sized at generation.
+    if not square_mode:
+        result_img = styler.adjust_panel(result_img, target_width=target_width)
     result_img = styler.apply_style(result_img)
+    # Optional square padding
+    if getattr(config.style, "square_panels", False):
+        try:
+            side = int(getattr(config.style, "square_size", 0) or 0)
+            if side <= 0:
+                side = int(target_width)
+            fill = getattr(config.style, "square_fill_color", "#ffffff")
+            result_img = ManhwaStyler.pad_to_square(result_img, size=side, fill_color=fill)
+        except Exception as e:
+            logger.debug(f"Square pad failed: {e}")
     # Optional lighting effect
     if getattr(config.style, "apply_dramatic_lighting", False):
         try:
@@ -245,6 +284,23 @@ def _generate_panel(config: Config, context: str, scene_prompt: str, speaker: st
             logger.debug(f"Detection failed or unavailable: {e}")
 
     result_img = styler.add_text(result_img, speech_text, speaker=speaker, bubble_type=bubble_type, position=position)
+    # Add border around panel if configured
+    try:
+        bw = int(getattr(config.style, "panel_border_width", 0) or 0)
+        bc = getattr(config.style, "panel_border_color", "#000000")
+        if bw > 0:
+            result_img = ManhwaStyler.add_border(result_img, border_width=bw, border_color=bc)
+    except Exception as _e:
+        logger.debug(f"Border add failed: {_e}")
+    # Final square enforcement after all overlays/border
+    if getattr(config.style, "square_panels", False):
+        try:
+            fill = getattr(config.style, "square_fill_color", "#ffffff")
+            # If a fixed runtime size is set, use it; otherwise use current max dimension
+            final_side = int(getattr(config.style, "runtime_square_size", 0) or 0) or max(result_img.size)
+            result_img = ManhwaStyler.pad_to_square(result_img, size=final_side, fill_color=fill)
+        except Exception as e:
+            logger.debug(f"Final square enforce failed: {e}")
 
     return result_img, {"seed": seed, "prompt": prompt, "negative_prompt": negative_prompt}
 
@@ -255,6 +311,35 @@ def main():
     os.makedirs(config.output.output_dir, exist_ok=True)
     logger.info(f"Using diffusion model: {config.model.stable_diffusion_model}")
     logger.info(f"Preferred device: {config.model.device}")
+    try:
+        logger.info(
+            "Panel border: width=%s color=%s",
+            getattr(config.style, "panel_border_width", 0),
+            getattr(config.style, "panel_border_color", "#000000"),
+        )
+    except Exception:
+        pass
+    try:
+        logger.info(
+            "Square panels: %s | size=%s | fill=%s",
+            getattr(config.style, "square_panels", False),
+            getattr(config.style, "square_size", None),
+            getattr(config.style, "square_fill_color", "#ffffff"),
+        )
+    except Exception:
+        pass
+        # Compute a fixed runtime square size if requested
+        if getattr(config.style, "square_panels", False) and getattr(config.style, "same_panel_size", True):
+            # Prefer explicit square_size; otherwise derive from panel_width or default
+            side = getattr(config.style, "square_size", None)
+            if not side:
+                side = getattr(config.style, "panel_width", 800)
+            try:
+                side = int(side)
+            except Exception:
+                side = 800
+            config.style.runtime_square_size = side
+            logger.info("Runtime square size fixed to: %s", side)
 
     client = None
     if config.model.REMOVED_TOKENtoken:
@@ -267,6 +352,12 @@ def main():
     with open(story_path, "w", encoding="utf-8") as sf:
         sf.write(story_txt)
     logger.info(f"Saved story to {story_path}")
+    # Print full story to logs with word count
+    try:
+        _wc = len(story_txt.split())
+        logger.info("Story (~%d words):\n%s", _wc, story_txt)
+    except Exception:
+        logger.info("Story (raw): %s", story_txt)
 
     logger.info("Deriving panel scenario from story...")
     scenes = panels_from_story(config, client, story_txt)
@@ -292,6 +383,14 @@ def main():
         f.write(f"Model: {config.model.stable_diffusion_model}\n")
         f.write(f"Device: {config.model.device}\n")
         f.write(f"LLM Model: {config.model.llm_model}\n")
+        # Story section
+        try:
+            _wc = len(story_txt.split())
+        except Exception:
+            _wc = 0
+        f.write("\n-- Story (~{} words) --\n".format(_wc))
+        f.write(story_txt)
+        f.write("\n\n")
         f.write("\n-- Scenario --\n")
         f.write(json.dumps(scenes, ensure_ascii=False, indent=2))
         f.write("\n\n")
@@ -352,7 +451,7 @@ def main():
                 config.output.panel_filename_template.format(i)
             )
             panel.save(panel_path, quality=config.output.image_quality)
-            logger.info(f"Saved panel to {panel_path}")
+            logger.info(f"Saved panel to {panel_path} (size={panel.size})")
         else:
             panel_path = None
 

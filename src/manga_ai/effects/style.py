@@ -41,6 +41,33 @@ class ManhwaStyler:
             image = image.resize((target_width, new_height), Image.Resampling.LANCZOS)
         return image
 
+    @staticmethod
+    def add_border(img: Image.Image, border_width: int = 0, border_color: str = "#000000") -> Image.Image:
+        if border_width <= 0:
+            return img
+        w, h = img.size
+        out = Image.new("RGB", (w + 2 * border_width, h + 2 * border_width), border_color)
+        out.paste(img, (border_width, border_width))
+        return out
+
+    @staticmethod
+    def pad_to_square(img: Image.Image, size: int, fill_color: str = "#ffffff") -> Image.Image:
+        w, h = img.size
+        if w == h == size:
+            return img
+        out = Image.new("RGB", (size, size), fill_color)
+        # Fit the image inside the square without scaling (only pad). If larger, center-crop.
+        x = max(0, (size - w) // 2)
+        y = max(0, (size - h) // 2)
+        if w <= size and h <= size:
+            out.paste(img, (x, y))
+            return out
+        # If either dimension exceeds size, center-crop the image to size
+        left = max(0, (w - size) // 2)
+        top = max(0, (h - size) // 2)
+        crop = img.crop((left, top, left + size, top + size))
+        return crop
+
     def add_text(
         self,
         img: Image.Image,
@@ -65,8 +92,21 @@ class ManhwaStyler:
 
         padding = 16
         x, y = position
-        # Measure text size
-        tw, th = draw.textbbox((0, 0), text, font=self.font)[2:]
+        # Choose font (whisper uses slightly smaller text)
+        use_font = self.font
+        if btype == "whisper":
+            try:
+                size = max(14, int(getattr(self.font, "size", 24) * 0.85))
+                # Prefer explicit font_path if provided
+                if self.font_path and os.path.exists(self.font_path):
+                    use_font = ImageFont.truetype(self.font_path, size)
+            except Exception:
+                use_font = self.font
+
+        # Measure text size with the selected font
+        tb = draw.textbbox((0, 0), text, font=use_font)
+        tw = (tb[2] - tb[0])
+        th = (tb[3] - tb[1])
         bw, bh = tw + 2 * padding, th + 2 * padding
 
         rect = (x, y, x + bw, y + bh)
@@ -111,10 +151,70 @@ class ManhwaStyler:
                 draw_obj.line([(x2, cur), (x2, min(cur + dash_len, y2 - radius))], fill=outline, width=2)
                 cur += dash_len + gap
 
+        def cloud_bubble(draw_obj, box, fill=(255,255,255,255), outline=(0,0,0,255)):
+            """Draw a cloud-like perimeter by tiling soft circles around the text bounds."""
+            x1, y1, x2, y2 = box
+            w = max(30, x2 - x1)
+            h = max(24, y2 - y1)
+            # Inflate box slightly so circles don't overlap text too tightly
+            pad = 10
+            x1 -= pad; y1 -= pad; x2 += pad; y2 += pad
+            w = x2 - x1; h = y2 - y1
+            # Circle count along perimeter based on size
+            horiz = max(6, w // 24)
+            vert = max(4, h // 24)
+            r = max(8, min(w, h) // 8)  # radius of small circles
+            # Top edge
+            for i in range(int(horiz) + 1):
+                cx = int(x1 + i * (w / max(1, horiz)))
+                cy = y1
+                draw_obj.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline=outline)
+            # Bottom edge
+            for i in range(int(horiz) + 1):
+                cx = int(x1 + i * (w / max(1, horiz)))
+                cy = y2
+                draw_obj.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline=outline)
+            # Left edge
+            for j in range(int(vert) + 1):
+                cx = x1
+                cy = int(y1 + j * (h / max(1, vert)))
+                draw_obj.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline=outline)
+            # Right edge
+            for j in range(int(vert) + 1):
+                cx = x2
+                cy = int(y1 + j * (h / max(1, vert)))
+                draw_obj.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline=outline)
+            # Fill center softly by a rounded rectangle to avoid gaps
+            inner = (x1 + r//2, y1 + r//2, x2 - r//2, y2 - r//2)
+            rounded(draw_obj, inner, radius=min(20, r), fill=fill, outline=None, width=0)
+
         # Draw bubble based on type
-        if btype == "thought":
-            draw.ellipse(rect, fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
-            # thought tail (bubbles)
+        if btype == "sfx":
+            # Sound effect: no bubble, big bold outlined text, optional slight rotation
+            sfx_img = base.copy()
+            draw_sfx = ImageDraw.Draw(sfx_img)
+            try:
+                # Derive a larger temporary font size based on text length
+                approx = max(28, min(72, 60 - len(text) // 2))
+                font = self.bold_font
+                # Prefer explicit font_path if provided
+                if self.font_path and os.path.exists(self.font_path):
+                    font = ImageFont.truetype(self.font_path, approx)
+            except Exception:
+                font = self.bold_font
+
+            # Outline effect by drawing offsets
+            outline_color = (0, 0, 0, 255)
+            fill_color = (255, 255, 255, 255)
+            offsets = [(-2,0),(2,0),(0,-2),(0,2),(-2,-2),(2,2),(-2,2),(2,-2)]
+            for dx, dy in offsets:
+                draw_sfx.text((x + dx, y + dy), text, font=font, fill=outline_color)
+            draw_sfx.text((x, y), text, font=font, fill=fill_color)
+            return sfx_img.convert("RGB")
+        elif btype == "thought":
+            # Cloud-like perimeter around the text area
+            cloud_bubble(draw, rect, fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
+            # Thought tail (series of small bubbles)
             for i in range(3):
                 r = 10 - 3 * i
                 offset = 18 * (i + 1)
@@ -127,15 +227,15 @@ class ManhwaStyler:
             dashed_rounded(draw, rect, radius=16, fill=(255,255,255,200), outline=(80,80,80,255), dash_len=6, gap=6)
             text_fill = (20, 20, 20, 255)
         elif btype == "narration":
-            # narration box (caption)
-            rounded(draw, rect, radius=6, fill=(255, 247, 204, 255), outline=(0, 0, 0, 255), width=2)
+            # Narration / caption: simple rectangular box, no tail
+            draw.rectangle(rect, fill=(255, 247, 204, 255), outline=(0, 0, 0, 255), width=2)
             text_fill = (0, 0, 0, 255)
-        else:  # 'speech'
-            rounded(draw, rect, radius=16, fill=(255, 255, 255, 255), outline=(0, 0, 0, 255), width=2)
+        else:  # 'speech' normal dialogue: smooth oval/ellipse
+            draw.ellipse(rect, fill=(255, 255, 255, 255), outline=(0, 0, 0, 255))
             text_fill = (0, 0, 0, 255)
 
         # Draw text and optional speaker label
-        draw.text((x + padding, y + padding), text, font=self.font, fill=text_fill)
+        draw.text((x + padding, y + padding), text, font=use_font, fill=text_fill)
         if speaker and btype != "narration":
             draw.text((x, y - 25), speaker, font=self.bold_font, fill=(0, 0, 0, 255))
 

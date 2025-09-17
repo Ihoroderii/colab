@@ -17,6 +17,7 @@ def select_device_and_dtype(preferred: str) -> tuple[str, torch.dtype]:
 
 def load_pipeline_with_fallback(model_id: str, device: str, dtype: torch.dtype, token: Optional[str]):
     def _load(model: str):
+        print(f"Loading model {model} on {device} with dtype {dtype}")
         if "stable-diffusion-3" in model:
             return StableDiffusion3Pipeline.from_pretrained(model, torch_dtype=dtype, token=token).to(device)
         else:

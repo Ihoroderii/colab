@@ -43,6 +43,17 @@ class StyleConfig:
     # Detection-assisted placement
     auto_bubble_placement: bool = True
     draw_detection_debug: bool = False
+    # Panel border
+    panel_border_width: int = 4  # 0 disables border
+    panel_border_color: str = "#000000"
+    # Square panels
+    square_panels: bool = True
+    square_size: int | None = None  # If None, use computed target_width per panel
+    square_fill_color: str = "#ffffff"
+    # Keep all panels the same size in a run
+    same_panel_size: bool = True
+    # Runtime-computed fixed side (set in runner), not from env
+    runtime_square_size: int | None = None
 
     def __post_init__(self):
         if self.font_paths is None:
@@ -71,6 +82,9 @@ class ScenarioConfig:
     tone: str = "dramatic"
     protagonist: str = "Jin"
     antagonist: str = "Raven"
+    # Randomization controls for fallback (no-LLM) generation
+    randomize: bool = True
+    random_seed: int | None = None
 
 
 @dataclass
@@ -108,6 +122,7 @@ class Config:
         c = cls()
         # Model
         sd_model = os.getenv("SD_MODEL")
+        print("sd_model : ", sd_model)
         if sd_model:
             c.model.stable_diffusion_model = sd_model
         device = os.getenv("DEVICE")
@@ -165,6 +180,24 @@ class Config:
         canvas_bg = os.getenv("CANVAS_BG")
         if canvas_bg:
             c.style.canvas_bg = canvas_bg
+        panel_border_w = os.getenv("PANEL_BORDER_WIDTH")
+        if panel_border_w:
+            c.style.panel_border_width = int(panel_border_w)
+        panel_border_color = os.getenv("PANEL_BORDER_COLOR")
+        if panel_border_color:
+            c.style.panel_border_color = panel_border_color
+        square = os.getenv("SQUARE_PANELS")
+        if square:
+            c.style.square_panels = square.lower() in ("1","true","yes","on")
+        square_size = os.getenv("SQUARE_SIZE")
+        if square_size:
+            c.style.square_size = int(square_size)
+        square_fill = os.getenv("SQUARE_FILL_COLOR")
+        if square_fill:
+            c.style.square_fill_color = square_fill
+        same_size = os.getenv("SAME_PANEL_SIZE")
+        if same_size:
+            c.style.same_panel_size = same_size.lower() in ("1","true","yes","on")
 
         # Output
         out_dir = os.getenv("OUTPUT_DIR")
@@ -194,6 +227,15 @@ class Config:
         ant = os.getenv("ANTAGONIST")
         if ant:
             c.scenario.antagonist = ant
+        rnd = os.getenv("RANDOMIZE")
+        if rnd:
+            c.scenario.randomize = rnd.lower() in ("1","true","yes","on")
+        seed = os.getenv("SEED") or os.getenv("RANDOM_SEED")
+        if seed:
+            try:
+                c.scenario.random_seed = int(seed)
+            except Exception:
+                pass
 
         # Export
         export_enabled = os.getenv("EXPORT_ENABLED")
