@@ -1,0 +1,11 @@
+torch>=2.2.0
+numpy>=1.25.0
+pillow>=10.4.0
+opencv-python>=4.10.0.84
+transformers>=4.44.2
+diffusers>=0.30.3
+accelerate>=0.34.2
+openai>=1.51.2
+ipython>=8.12.0
+# Optional (GPU builds) - adjust per your CUDA version
+# torch==2.2.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html
