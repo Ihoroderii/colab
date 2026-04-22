@@ -9,7 +9,6 @@ import json, re, datetime
 from typing import Any, List, Dict
 import os
 import random
-import random, os
 from openai import OpenAI
 
 
@@ -179,79 +178,170 @@ def generate_story(config, client: OpenAI | None, target_words: int = 300) -> st
         )
         return completion.choices[0].message.content.strip()
 
+    result = _ask_story(target_words)
+    if _count_words(result) >= target_words * 0.5:
+        return result
+    return _fallback_story(config, target_words)
+
+
+def _fallback_panels_from_text(story_text: str, n: int) -> List[Dict[str, Any]]:
+    """Split story text into n panels using sentence-level heuristics.
+
+    Unlike _fallback_scenario, this actually uses the story text so panels
+    contain real content from the chapter.
+    """
+    import re as _re
+
+    sentences = _re.split(r"(?<=[.!?])\s+", story_text.strip()) if story_text else []
+    if not sentences:
+        return []
+
+    chunk_size = max(1, len(sentences) // n)
+    chunks = [" ".join(sentences[i:i + chunk_size]) for i in range(0, len(sentences), chunk_size)]
+    chunks = (chunks + [""] * n)[:n]
+
+    # Extract character names: look for capitalized words before verbs
+    action_verbs = (
+        "said|shouted|whispered|exclaimed|murmured|yelled|urged|echoed|replied|"
+        "grinned|nodded|sighed|laughed|gasped|frowned|smiled|cried|screamed|"
+        "pointed|turned|looked|watched|clapped|shook|blinked|squinted|ran|"
+        "swallowed|muttered|chimed|gestured|stepped"
+    )
+    name_pattern = _re.compile(rf'"[^"]+"\s+(\w+)\s+(?:{action_verbs})')
+    name_pattern2 = _re.compile(rf'\b([A-Z][a-z]{{2,}})\s+(?:{action_verbs})')
+    # Also catch possessives: "Mira's eyes", "Kaito's mind"
+    name_pattern3 = _re.compile(r"\b([A-Z][a-z]{2,})'s\s+\w+")
+    all_names = set(name_pattern.findall(story_text)) | set(name_pattern2.findall(story_text)) | set(name_pattern3.findall(story_text))
+    stop_words = {
+        "The", "This", "That", "But", "And", "She", "His", "Her", "Its",
+        "Every", "Would", "Could", "Should", "After", "Before", "Under",
+    }
+    character_names = sorted(all_names - stop_words)
+
+    visual_tags = [
+        "forest", "night", "dawn", "rain", "alley", "city", "rooftop", "shadow",
+        "fight", "magic", "code", "digital", "glow", "dark", "light", "monster",
+        "spell", "fire", "ice", "temple", "mountain", "river", "ocean", "cave",
+        "castle", "village", "school", "street", "neon", "storm", "explosion",
+    ]
+
+    panels: List[Dict[str, Any]] = []
+    for chunk in chunks:
+        chunk_low = chunk.lower()
+
+        # Pick the character mentioned most in this chunk
+        speaker = "Narrator"
+        best_count = 0
+        for name in character_names:
+            count = chunk_low.count(name.lower())
+            if count > best_count:
+                best_count = count
+                speaker = name
+
+        # Extract visual tags that appear in the text
+        tags = [t for t in visual_tags if t in chunk_low][:5]
+        if not tags:
+            tags = ["scene"]
+
+        # Use first sentence as context summary
+        first_sent = chunk.split(".")[0].strip()[:80] if chunk else "scene"
+
+        # Extract dialogue if present
+        dialogue_match = _re.search(r'"([^"]{5,})"', chunk)
+        speech = dialogue_match.group(1)[:120] if dialogue_match else chunk[:100].strip()
+
+        panels.append({
+            "context": first_sent,
+            "scene": tags,
+            "speaker": speaker,
+            "speech": speech or "...",
+        })
+    return panels
+
 
 def panels_from_story(config, client: OpenAI | None, story_text: str) -> List[Dict[str, Any]]:
     """Convert story prose into a JSON list of panels.
 
-    Returns exactly config.scenario.panels panels using LLM or a fallback splitter.
+    Uses LLM when available; falls back to text-splitting (using actual story
+    content, not random defaults).
     """
-    n = max(2, int(getattr(config.scenario, "panels", 6)))
-    if client is None:
-        # Fallback: naive split by sentences into n groups
-        import re
-        sentences = re.split(r"(?<=[.!?])\s+", story_text.strip()) if story_text else []
-        if not sentences:
-            return _fallback_scenario(config)
-        chunk_size = max(1, len(sentences) // n)
-        chunks = [" ".join(sentences[i:i+chunk_size]) for i in range(0, len(sentences), chunk_size)]
-        chunks = (chunks + [""] * n)[:n]
-        prot = getattr(config.scenario, "protagonist", "Hero")
-        ant = getattr(config.scenario, "antagonist", "Nemesis")
-        panels: List[Dict[str, Any]] = []
-        for ch in chunks:
-            who = "Narrator"
-            ch_low = ch.lower()
-            if prot.lower() in ch_low:
-                who = prot
-            elif ant.lower() in ch_low:
-                who = ant
-            tag_candidates = ["night","neon","rain","alley","city","rooftop","shadow","chase","fight","quiet"]
-            tags = [t for t in tag_candidates if t in ch_low][:5] or ["scene"]
-            panels.append({
-                "context": getattr(config.scenario, "setting", "city"),
-                "scene": tags,
-                "speaker": who,
-                "speech": ch[:120].strip() or "...",
-            })
-        return panels
+    import logging as _logging
+    _logger = _logging.getLogger(__name__)
 
-    # LLM path
-    completion = client.chat.completions.create(
-        model=config.model.llm_model,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a webtoon script adapter. Given a STORY, return ONLY a JSON list with exactly {n} panels. "
-                    "Each panel is an object with keys: context (string), scene (array of 3-6 short visual tags), "
-                    "speaker (string), speech (short dialogue or narration). Keep speech under 25 words.".replace("{n}", str(n))
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Story:\n{story_text}\n\n"
-                    f"Setting: {getattr(config.scenario, 'setting', 'city at night')} | "
-                    f"Tone: {getattr(config.scenario, 'tone', 'dramatic')} | "
-                    f"Protagonist: {getattr(config.scenario, 'protagonist', 'Hero')} | "
-                    f"Antagonist: {getattr(config.scenario, 'antagonist', 'Nemesis')}\n"
-                    f"Return exactly {n} panels as JSON list."
-                ),
-            },
-        ],
-        temperature=getattr(config.generation, "temperature", 0.8),
-        max_tokens=max(768, getattr(config.generation, "max_tokens", 500)),
+    n = max(2, int(getattr(config.scenario, "panels", 6)))
+
+    if client is None:
+        _logger.warning("No LLM client -- using text-based fallback for panel scenario")
+        result = _fallback_panels_from_text(story_text, n)
+        if result:
+            return result
+        _logger.warning("Text fallback produced no panels, using canned fallback")
+        return _fallback_scenario(config)
+
+    # LLM path -- prompt is grounded entirely in the story text
+    system_prompt = (
+        "You are a webtoon script adapter. Convert a chapter into manga panels.\n\n"
+        "CRITICAL RULES:\n"
+        "1. Use ONLY characters, locations, and events from the chapter text below.\n"
+        "2. Do NOT invent characters or settings that are not in the chapter.\n"
+        "3. Keep speech faithful to the chapter's actual dialogue.\n"
+        "4. Scene tags should describe what a manga artist would draw for that moment.\n\n"
+        f"Return ONLY a JSON list with exactly {n} panels.\n"
+        "Each panel: {{\"context\": \"brief scene description\", "
+        "\"scene\": [\"visual\", \"tags\", \"for\", \"artist\"], "
+        "\"speaker\": \"CharacterName\", "
+        "\"speech\": \"short dialogue or narration under 25 words\"}}"
     )
-    raw = completion.choices[0].message.content.strip()
-    scenes = safe_parse_json(raw)
-    if isinstance(scenes, list) and len(scenes) == n:
-        return scenes
+
+    user_prompt = (
+        f"Chapter text:\n---\n{story_text}\n---\n\n"
+        f"Convert this chapter into exactly {n} manga panels.\n"
+        "Pick the most visually dramatic moments. "
+        "Use the actual character names and locations from the text."
+    )
+
+    _logger.info("Sending chapter text (%d chars) to LLM for scenario generation", len(story_text))
+
+    try:
+        completion = client.chat.completions.create(
+            model=config.model.llm_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=getattr(config.generation, "temperature", 0.8),
+            max_tokens=max(768, getattr(config.generation, "max_tokens", 500)),
+        )
+        raw = completion.choices[0].message.content.strip()
+        _logger.info("Raw LLM scenario response (%d chars): %.500s", len(raw), raw)
+
+        scenes = safe_parse_json(raw)
+        if isinstance(scenes, list) and len(scenes) >= 1:
+            if len(scenes) != n:
+                _logger.warning("LLM returned %d panels (requested %d), using what we got", len(scenes), n)
+            return scenes[:n] if len(scenes) > n else scenes
+
+        _logger.warning("LLM scenario parse failed or empty, falling back to text splitter")
+    except Exception as e:
+        _logger.error("LLM scenario call failed: %s -- falling back to text splitter", e)
+
+    result = _fallback_panels_from_text(story_text, n)
+    if result:
+        return result
+    _logger.warning("All scenario methods failed, using canned fallback")
     return _fallback_scenario(config)
 
 
 def generate_scenario(config, client: OpenAI | None):
     if client is None:
         return _fallback_scenario(config)
+    _random_defaults(config)
+    n_panels = getattr(config.scenario, "panels", 6)
+    genre = getattr(config.scenario, "genre", "action")
+    setting = getattr(config.scenario, "setting", "city at night")
+    tone = getattr(config.scenario, "tone", "dramatic")
+    protagonist = getattr(config.scenario, "protagonist", "Hero")
+    antagonist = getattr(config.scenario, "antagonist", "Nemesis")
     completion = client.chat.completions.create(
         model=config.model.llm_model,
         messages=[
@@ -262,8 +352,8 @@ def generate_scenario(config, client: OpenAI | None):
                     "Return ONLY a JSON list of panels for a Korean manhwa episode. "
                     "Each panel is a dictionary with keys: context, scene, speaker, speech. "
                     "The 'scene' must be an array of short visual tags. "
-                    "Write exactly {panels} panels with a coherent arc. "
-                    "Genre: {genre}; Setting: {setting}; Tone: {tone}; Protagonist: {protagonist}; Antagonist: {antagonist}. "
+                    f"Write exactly {n_panels} panels with a coherent arc. "
+                    f"Genre: {genre}; Setting: {setting}; Tone: {tone}; Protagonist: {protagonist}; Antagonist: {antagonist}. "
                     "Example: [ {\"context\":\"Village\",\"scene\":[\"mountain\"],\"speaker\":\"Akira\",\"speech\":\"...\"} ]"
                 )
             },

@@ -122,7 +122,6 @@ class Config:
         c = cls()
         # Model
         sd_model = os.getenv("SD_MODEL")
-        print("sd_model : ", sd_model)
         if sd_model:
             c.model.stable_diffusion_model = sd_model
         device = os.getenv("DEVICE")

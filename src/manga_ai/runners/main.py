@@ -305,6 +305,82 @@ def _generate_panel(config: Config, context: str, scene_prompt: str, speaker: st
     return result_img, {"seed": seed, "prompt": prompt, "negative_prompt": negative_prompt}
 
 
+# ---------------------------------------------------------------------------
+# PanelSpec-native rendering
+# ---------------------------------------------------------------------------
+
+def render_panel_spec(
+    config: Config,
+    panel_spec: dict,
+    ip_adapter_images: list = None,
+) -> tuple:
+    """Render a single panel from a PanelSpec dict.
+
+    This is the first-class entry point for manga-ai-bot to consume
+    the shared PanelSpec contract produced by manga_prep.  It uses
+    prompt_positive / prompt_negative directly instead of rebuilding
+    prompts through get_manhwa_prompts.
+
+    Args:
+        config: manga-ai-bot Config.
+        panel_spec: Dict with at least prompt_positive and prompt_negative.
+        ip_adapter_images: Optional reference images for IP-Adapter conditioning.
+
+    Returns:
+        (PIL.Image, metadata_dict)
+    """
+    pipeline, (device, dtype) = get_cached_pipeline(
+        config.model.stable_diffusion_model,
+        config.model.device,
+        (config.model.REMOVED_TOKENtoken or None),
+    )
+
+    prompt = panel_spec.get("prompt_positive", "")
+    negative = panel_spec.get("prompt_negative", "")
+    if not prompt:
+        raise ValueError("panel_spec must contain a non-empty prompt_positive")
+
+    seed = random.randint(0, 2**32 - 1)
+    generator = torch.Generator(device=device).manual_seed(seed)
+
+    gen_kwargs = {"width": 768, "height": 1024}
+
+    # IP-Adapter conditioning if pipeline supports it and images are provided
+    if ip_adapter_images and hasattr(pipeline, "set_ip_adapter_scale"):
+        try:
+            pipeline.set_ip_adapter_scale(0.6)
+            if len(ip_adapter_images) == 1:
+                gen_kwargs["ip_adapter_image"] = ip_adapter_images[0]
+            else:
+                gen_kwargs["ip_adapter_image"] = ip_adapter_images
+        except Exception as e:
+            logger.debug("IP-Adapter not available: %s", e)
+
+    result_img = pipeline(
+        prompt=prompt,
+        negative_prompt=negative,
+        guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
+        num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
+        generator=generator,
+        **gen_kwargs,
+    ).images[0]
+
+    styler = ManhwaStyler()
+    result_img = styler.apply_style(result_img)
+
+    meta = {
+        "seed": seed,
+        "prompt": prompt,
+        "negative_prompt": negative,
+        "panel_id": panel_spec.get("panel_id"),
+        "shot_type": panel_spec.get("shot_type"),
+        "camera_angle": panel_spec.get("camera_angle"),
+        "characters": [c.get("character_id", "") for c in panel_spec.get("characters", [])],
+        "location_id": panel_spec.get("location_id", ""),
+    }
+    return result_img, meta
+
+
 def main():
     _init_logging()
     config = _init_config()
@@ -328,18 +404,17 @@ def main():
         )
     except Exception:
         pass
-        # Compute a fixed runtime square size if requested
-        if getattr(config.style, "square_panels", False) and getattr(config.style, "same_panel_size", True):
-            # Prefer explicit square_size; otherwise derive from panel_width or default
-            side = getattr(config.style, "square_size", None)
-            if not side:
-                side = getattr(config.style, "panel_width", 800)
-            try:
-                side = int(side)
-            except Exception:
-                side = 800
-            config.style.runtime_square_size = side
-            logger.info("Runtime square size fixed to: %s", side)
+
+    if getattr(config.style, "square_panels", False) and getattr(config.style, "same_panel_size", True):
+        side = getattr(config.style, "square_size", None)
+        if not side:
+            side = getattr(config.style, "panel_width", 800)
+        try:
+            side = int(side)
+        except Exception:
+            side = 800
+        config.style.runtime_square_size = side
+        logger.info("Runtime square size fixed to: %s", side)
 
     client = None
     if config.model.REMOVED_TOKENtoken:

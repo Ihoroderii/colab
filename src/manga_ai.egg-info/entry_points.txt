@@ -1,0 +1,2 @@
+[console_scripts]
+manga-ai = manga_ai.runners.main:main

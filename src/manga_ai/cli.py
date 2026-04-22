@@ -80,7 +80,7 @@ def update_config_from_args(config: Config, args: argparse.Namespace) -> Config:
     if "sd_model" in a: config.model.stable_diffusion_model = a["sd_model"]
     if "llm_model" in a: config.model.llm_model = a["llm_model"]
     if "device" in a: config.model.device = a["device"]
-    if "REMOVED_TOKENtoken" in a: config.model.REMOVED_TOKENtoken = a["REMOVED_TOKENtoken"]
+    if "hf_token" in a: config.model.REMOVED_TOKENtoken = a["hf_token"]
     # Generation
     if "guidance_scale" in a: config.generation.guidance_scale = a["guidance_scale"]
     if "num_steps" in a: config.generation.num_inference_steps = a["num_steps"]
@@ -102,8 +102,6 @@ def update_config_from_args(config: Config, args: argparse.Namespace) -> Config:
         config.style.same_panel_size = a["same_panel_size"]
     if "auto_panel_width" in a and a["auto_panel_width"] is not None:
         config.style.auto_panel_width = a["auto_panel_width"]
-    if "apply_dramatic_lightning" in a:  # handle typo-safe
-        config.style.apply_dramatic_lighting = a["apply_dramatic_lightning"]
     if "apply_dramatic_lighting" in a:
         config.style.apply_dramatic_lighting = a["apply_dramatic_lighting"]
     if "lighting_style" in a:
