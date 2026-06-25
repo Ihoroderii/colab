@@ -58,6 +58,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-randomize", dest="randomize", action="store_false")
     parser.set_defaults(randomize=None)
     parser.add_argument("--seed", type=int, help="Random seed for reproducibility (fallback mode)")
+    # Reference image conditioning
+    parser.add_argument("--reference-image", help="Path to an image used for img2img layout/composition guidance")
+    parser.add_argument("--img2img-strength", type=float, help="0..1; lower keeps the reference closer, higher changes more")
+    parser.add_argument("--reference-resize-mode", choices=["fit","crop"], help="How to resize the reference image to panel size")
     # Validation
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--val-threshold", type=float)
@@ -127,6 +131,13 @@ def update_config_from_args(config: Config, args: argparse.Namespace) -> Config:
         config.scenario.randomize = a["randomize"]
     if "seed" in a:
         config.scenario.random_seed = a["seed"]
+    # Reference image conditioning
+    if "reference_image" in a:
+        config.reference.image_path = a["reference_image"]
+    if "img2img_strength" in a:
+        config.reference.img2img_strength = max(0.0, min(1.0, a["img2img_strength"]))
+    if "reference_resize_mode" in a:
+        config.reference.resize_mode = a["reference_resize_mode"]
     # Validation
     if "validate" in a: config.validation.enabled = a["validate"]
     if "val_threshold" in a: config.validation.similarity_threshold = a["val_threshold"]

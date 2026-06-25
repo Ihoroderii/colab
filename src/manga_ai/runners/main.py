@@ -8,12 +8,12 @@ from typing import Optional
 import numpy as np
 import cv2
 import torch
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 from openai import OpenAI
 
 from ..config import Config
 from ..cli import parse_args, update_config_from_args
-from ..pipelines.diffusion import get_cached_pipeline, select_device_and_dtype
+from ..pipelines.diffusion import get_cached_img2img_pipeline, get_cached_pipeline, select_device_and_dtype
 from ..pipelines.scenario import generate_scenario, synthesize_prose_story, generate_story, panels_from_story
 from ..effects.style import ManhwaStyler
 from ..effects.text import ManhwaEffects
@@ -99,6 +99,37 @@ def _round_to_multiple(x: int, base: int = 8) -> int:
     return max(base, int(x // base * base))
 
 
+def _resample_lanczos():
+    return getattr(getattr(Image, "Resampling", Image), "LANCZOS")
+
+
+def _load_reference_image(path: str | None) -> Image.Image | None:
+    if not path:
+        return None
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Reference image does not exist: {path}")
+    try:
+        img = Image.open(path).convert("RGB")
+        logger.info("Loaded reference image: %s size=%s", path, img.size)
+        return img
+    except Exception as e:
+        logger.warning("Could not load reference image %s: %s", path, e)
+        return None
+
+
+def _prepare_reference_image(reference_image: Image.Image, size: tuple[int, int], resize_mode: str) -> Image.Image:
+    width = _round_to_multiple(max(256, int(size[0])), 8)
+    height = _round_to_multiple(max(256, int(size[1])), 8)
+    resample = _resample_lanczos()
+    mode = (resize_mode or "fit").lower()
+    if mode == "crop":
+        return ImageOps.fit(reference_image, (width, height), method=resample, centering=(0.5, 0.5))
+    contained = ImageOps.contain(reference_image, (width, height), method=resample)
+    canvas = Image.new("RGB", (width, height), (255, 255, 255))
+    canvas.paste(contained, ((width - contained.width) // 2, (height - contained.height) // 2))
+    return canvas
+
+
 def _estimate_base_width(style_cfg, scene_prompt: str, speech_text: str) -> int:
     # Heuristic:
     # - Start from declared base (default 800)
@@ -158,18 +189,16 @@ def _infer_bubble_type(speaker: str, speech: str, tone: str, scene_tags=None) ->
     return "speech"
 
 
-def _generate_panel(config: Config, context: str, scene_prompt: str, speaker: str, speech_text: str):
+def _generate_panel(
+    config: Config,
+    context: str,
+    scene_prompt: str,
+    speaker: str,
+    speech_text: str,
+    reference_image: Image.Image | None = None,
+):
     keypoints = _text_to_pose(scene_prompt)
     pose_image = _draw_pose(keypoints)
-
-    pipeline, (device, dtype) = get_cached_pipeline(
-        config.model.stable_diffusion_model,
-        config.model.device,
-        (config.model.REMOVED_TOKENtoken or None),
-    )
-
-    seed = random.randint(0, 2**32 - 1)
-    generator = torch.Generator(device=device).manual_seed(seed)
 
     prompt, negative_prompt = get_manhwa_prompts(context, scene_prompt)
 
@@ -208,14 +237,57 @@ def _generate_panel(config: Config, context: str, scene_prompt: str, speaker: st
         gen_side = _round_to_multiple(gen_side, 8)
         gen_kwargs.update({"width": gen_side, "height": gen_side})
 
-    result_img = pipeline(
-        prompt=prompt,
-        negative_prompt=negative_prompt,
-        guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
-        num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
-        generator=generator,
-        **gen_kwargs,
-    ).images[0]
+    if reference_image is not None:
+        pipeline, (device, dtype) = get_cached_img2img_pipeline(
+            config.model.stable_diffusion_model,
+            config.model.device,
+            (config.model.REMOVED_TOKENtoken or None),
+            getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
+        )
+    else:
+        pipeline, (device, dtype) = get_cached_pipeline(
+            config.model.stable_diffusion_model,
+            config.model.device,
+            (config.model.REMOVED_TOKENtoken or None),
+            getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
+        )
+
+    seed = random.randint(0, 2**32 - 1)
+    generator = torch.Generator(device=device).manual_seed(seed)
+
+    if reference_image is not None:
+        if square_mode:
+            ref_size = (gen_kwargs.get("width", target_width), gen_kwargs.get("height", target_width))
+        else:
+            ratio = reference_image.height / max(1, reference_image.width)
+            ref_size = (target_width, max(256, int(target_width * ratio)))
+        conditioned_image = _prepare_reference_image(
+            reference_image,
+            ref_size,
+            getattr(config.reference, "resize_mode", "fit"),
+        )
+        strength = float(getattr(config.reference, "img2img_strength", 0.38) or 0.38)
+        strength = max(0.0, min(1.0, strength))
+        result_img = pipeline(
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            image=conditioned_image,
+            strength=strength,
+            guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
+            num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
+            generator=generator,
+        ).images[0]
+        generation_mode = "img2img"
+    else:
+        result_img = pipeline(
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
+            num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
+            generator=generator,
+            **gen_kwargs,
+        ).images[0]
+        generation_mode = "txt2img"
 
     styler = ManhwaStyler()
     # If not square mode, do the classic aspect-based resize. Square mode already sized at generation.
@@ -302,7 +374,12 @@ def _generate_panel(config: Config, context: str, scene_prompt: str, speaker: st
         except Exception as e:
             logger.debug(f"Final square enforce failed: {e}")
 
-    return result_img, {"seed": seed, "prompt": prompt, "negative_prompt": negative_prompt}
+    return result_img, {
+        "seed": seed,
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "generation_mode": generation_mode,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -333,6 +410,7 @@ def render_panel_spec(
         config.model.stable_diffusion_model,
         config.model.device,
         (config.model.REMOVED_TOKENtoken or None),
+        getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
     )
 
     prompt = panel_spec.get("prompt_positive", "")
@@ -416,6 +494,14 @@ def main():
         config.style.runtime_square_size = side
         logger.info("Runtime square size fixed to: %s", side)
 
+    reference_image = _load_reference_image(getattr(config.reference, "image_path", None))
+    if reference_image is not None:
+        logger.info(
+            "Reference conditioning enabled: strength=%s resize_mode=%s",
+            getattr(config.reference, "img2img_strength", 0.38),
+            getattr(config.reference, "resize_mode", "fit"),
+        )
+
     client = None
     if config.model.REMOVED_TOKENtoken:
         client = OpenAI(base_url="https://router.huggingface.co/v1", api_key=config.model.REMOVED_TOKENtoken)
@@ -456,8 +542,11 @@ def main():
         f.write("=== Manhwa Generation Run Log ===\n")
         f.write(f"Timestamp: {run_ts}\n")
         f.write(f"Model: {config.model.stable_diffusion_model}\n")
+        f.write(f"Fallback model: {getattr(config.model, 'fallback_diffusion_model', None)}\n")
         f.write(f"Device: {config.model.device}\n")
         f.write(f"LLM Model: {config.model.llm_model}\n")
+        f.write(f"Reference image: {getattr(config.reference, 'image_path', None)}\n")
+        f.write(f"Img2img strength: {getattr(config.reference, 'img2img_strength', None)}\n")
         # Story section
         try:
             _wc = len(story_txt.split())
@@ -502,7 +591,7 @@ def main():
         speech = sc.get("speech", "")
 
         try:
-            panel, meta = _generate_panel(config, context, scene, speaker, speech)
+            panel, meta = _generate_panel(config, context, scene, speaker, speech, reference_image=reference_image)
         except Exception as e:
             logger.error(f"Panel {i} generation failed: {e}")
             panel = Image.new("RGB", (768, 1024), color=(32, 32, 32))
@@ -512,7 +601,13 @@ def main():
                 draw.text((30, 90), f"{speaker}: {speech}", fill=(220, 220, 220))
             except Exception:
                 pass
-            meta = {"seed": None, "prompt": None, "negative_prompt": None}
+            meta = {
+                "seed": None,
+                "prompt": None,
+                "negative_prompt": None,
+                "generation_mode": "failed",
+                "error": str(e),
+            }
 
         if validator is not None and validator.available():
             passed, details = validator.validate(panel, ref_img, expected_traits=[speaker] if speaker else None)
@@ -539,6 +634,9 @@ def main():
             f.write(f"Speech: {speech}\n")
             f.write(f"Prompt: {meta.get('prompt')}\n")
             f.write(f"Negative: {meta.get('negative_prompt')}\n")
+            f.write(f"Generation mode: {meta.get('generation_mode')}\n")
+            if meta.get("error"):
+                f.write(f"Error: {meta.get('error')}\n")
             f.write(f"Seed: {meta.get('seed')}\n")
             if panel_path:
                 f.write(f"Output: {panel_path}\n")

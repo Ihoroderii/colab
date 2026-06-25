@@ -13,8 +13,10 @@ cd "$SCRIPT_DIR"
 if [[ -f .env ]]; then
   echo "Loading .env"
   set +u
+  set -a
   # shellcheck disable=SC1090
   source .env
+  set +a
   set -u
 fi
 

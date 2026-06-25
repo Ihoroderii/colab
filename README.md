@@ -42,6 +42,33 @@ export OPENAI_API_KEY=your_token
 
 Outputs land in `output/`.
 
+## Use a reference screenshot
+
+To keep generated panels close to an existing screenshot's layout, use img2img reference conditioning:
+
+```bash
+python -m manga_ai \
+  --reference-image data/reference_dialog.png \
+  --img2img-strength 0.35 \
+  --reference-resize-mode fit \
+  --genre drama \
+  --setting "two people talking in a quiet classroom after school" \
+  --tone "calm emotional conversation" \
+  --panels 4 \
+  --no-randomize \
+  --export
+```
+
+Equivalent `.env` settings:
+
+```bash
+REFERENCE_IMAGE=data/reference_dialog.png
+IMG2IMG_STRENGTH=0.35
+REFERENCE_RESIZE_MODE=fit
+```
+
+Use lower `IMG2IMG_STRENGTH` values, such as `0.25`-`0.4`, to keep the screenshot layout closer. Use higher values, such as `0.5`-`0.7`, when you want more visible changes.
+
 ## Configure tokens once
 
 You can set your Hugging Face or Router token once and all runners will pick it up.

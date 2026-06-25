@@ -1,0 +1,63 @@
+=== Manhwa Generation Run Log ===
+Timestamp: 2026-06-22_10-58-28
+Model: runwayml/stable-diffusion-v1-5
+Fallback model: runwayml/stable-diffusion-v1-5
+Device: cpu
+LLM Model: meta-llama/Meta-Llama-3-8B-Instruct:novita
+Reference image: /real/path/to/your/screenshot.png
+Img2img strength: 0.35
+
+-- Story (~303 words) --
+Episode 1: Rooftop Oath. In the two people talking in a quiet classroom after school, Jin moves with purpose while rumors of Raven spread. Under a calm emotional conversation mood, streets hum with a drama pulse. Jin discovers a clue—subtle as neon reflected in rain—leading closer to Raven. Promises linger; debts resurface. A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echoes against glass and concrete. Finally, Raven reveals a twist that forces Jin to reconsider allies, motives, and the cost of truth. Whispers flow through stairwells, mapping a maze that returns always to the same door. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Whispers flow through stairwells, mapping a maze that returns always to the same door. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. Whispers flow through stairwells, mapping a maze that returns always to the same door. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow.
+
+
+-- Scenario --
+[
+  {
+    "context": "Episode 1: Rooftop Oath",
+    "scene": [
+      "rain",
+      "rooftop",
+      "school",
+      "street",
+      "neon"
+    ],
+    "speaker": "Narrator",
+    "speech": "Episode 1: Rooftop Oath. In the two people talking in a quiet classroom after school, Jin moves with"
+  },
+  {
+    "context": "A confrontation simmers in alleys and rooftops",
+    "scene": [
+      "night",
+      "alley",
+      "rooftop",
+      "ice"
+    ],
+    "speaker": "Narrator",
+    "speech": "A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echo"
+  },
+  {
+    "context": "Whispers flow through stairwells, mapping a maze that returns always to the same",
+    "scene": [
+      "rain",
+      "city",
+      "rooftop",
+      "light"
+    ],
+    "speaker": "Narrator",
+    "speech": "Whispers flow through stairwells, mapping a maze that returns always to the same door. Rain scatters"
+  },
+  {
+    "context": "From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an an",
+    "scene": [
+      "rain",
+      "city",
+      "rooftop",
+      "light",
+      "street"
+    ],
+    "speaker": "Narrator",
+    "speech": "From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. Whispers flow"
+  }
+]
+

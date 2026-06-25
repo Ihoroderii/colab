@@ -6,6 +6,7 @@ import os
 @dataclass
 class ModelConfig:
     stable_diffusion_model: str = "stabilityai/stable-diffusion-3.5-large"
+    fallback_diffusion_model: str = "runwayml/stable-diffusion-v1-5"
     llm_model: str = "meta-llama/Meta-Llama-3-8B-Instruct:novita"
     blip_model: str = "Salesforce/blip-image-captioning-large"
     clip_model: str = "ViT-B/32"
@@ -106,6 +107,13 @@ class ValidationConfig:
     clip_model: str = "ViT-B/32"
 
 
+@dataclass
+class ReferenceConfig:
+    image_path: str | None = None
+    img2img_strength: float = 0.38
+    resize_mode: str = "fit"  # 'fit' preserves the whole reference; 'crop' fills the panel
+
+
 class Config:
     def __init__(self):
         self.model = ModelConfig()
@@ -115,6 +123,7 @@ class Config:
         self.scenario = ScenarioConfig()
         self.export = ExportConfig()
         self.validation = ValidationConfig()
+        self.reference = ReferenceConfig()
         os.makedirs(self.output.output_dir, exist_ok=True)
 
     @classmethod
@@ -124,6 +133,9 @@ class Config:
         sd_model = os.getenv("SD_MODEL")
         if sd_model:
             c.model.stable_diffusion_model = sd_model
+        fallback_sd_model = os.getenv("FALLBACK_SD_MODEL")
+        if fallback_sd_model:
+            c.model.fallback_diffusion_model = fallback_sd_model
         device = os.getenv("DEVICE")
         if device:
             c.model.device = device
@@ -235,6 +247,17 @@ class Config:
                 c.scenario.random_seed = int(seed)
             except Exception:
                 pass
+
+        # Reference image conditioning
+        ref_img = os.getenv("REFERENCE_IMAGE") or os.getenv("REFERENCE_IMAGE_PATH")
+        if ref_img:
+            c.reference.image_path = ref_img
+        strength = os.getenv("IMG2IMG_STRENGTH") or os.getenv("REFERENCE_STRENGTH")
+        if strength:
+            c.reference.img2img_strength = max(0.0, min(1.0, float(strength)))
+        resize_mode = os.getenv("REFERENCE_RESIZE_MODE")
+        if resize_mode:
+            c.reference.resize_mode = resize_mode.lower()
 
         # Export
         export_enabled = os.getenv("EXPORT_ENABLED")
