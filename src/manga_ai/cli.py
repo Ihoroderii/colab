@@ -5,10 +5,26 @@ from .config import Config
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Manhwa Generator")
     # Model
+    parser.add_argument("--image-backend", choices=["local", "api"], help="Use local diffusers or a remote image API")
     parser.add_argument("--sd-model")
+    parser.add_argument("--llm-provider", choices=["huggingface", "cloudflare", "none", "fallback"], help="Remote LLM provider for story and panel planning")
     parser.add_argument("--llm-model")
     parser.add_argument("--device", choices=["cuda","cpu"])    
     parser.add_argument("--hf-token")
+    parser.add_argument("--image-api-provider", choices=["openai", "huggingface", "cloudflare"], help="Remote image API provider")
+    parser.add_argument("--image-api-model", help="Remote image API model")
+    parser.add_argument("--image-api-key", help="Remote image API key")
+    parser.add_argument("--image-api-base-url", help="Optional OpenAI-compatible base URL")
+    parser.add_argument("--hf-image-provider", help="Optional Hugging Face Inference Provider route, e.g. fal-ai or replicate")
+    parser.add_argument("--cloudflare-account-id", help="Cloudflare account ID for Workers AI")
+    parser.add_argument("--cloudflare-api-token", help="Cloudflare API token with Workers AI permissions")
+    cfmp = parser.add_mutually_exclusive_group()
+    cfmp.add_argument("--cloudflare-use-multipart", dest="cloudflare_use_multipart", action="store_true", help="Send Cloudflare image requests as multipart form data")
+    cfmp.add_argument("--no-cloudflare-use-multipart", dest="cloudflare_use_multipart", action="store_false")
+    parser.set_defaults(cloudflare_use_multipart=None)
+    parser.add_argument("--image-api-size", help="Remote image size, e.g. 1024x1024")
+    parser.add_argument("--image-api-quality", choices=["low", "medium", "high", "auto"], help="Remote image quality")
+    parser.add_argument("--image-api-output-format", choices=["png", "jpeg", "webp"], help="Remote image output format")
     # Generation
     parser.add_argument("--guidance-scale", type=float)
     parser.add_argument("--num-steps", type=int)
@@ -62,6 +78,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference-image", help="Path to an image used for img2img layout/composition guidance")
     parser.add_argument("--img2img-strength", type=float, help="0..1; lower keeps the reference closer, higher changes more")
     parser.add_argument("--reference-resize-mode", choices=["fit","crop"], help="How to resize the reference image to panel size")
+    # Blender-generated control/reference images
+    bc = parser.add_mutually_exclusive_group()
+    bc.add_argument("--use-blender-control", dest="use_blender_control", action="store_true", help="Generate per-panel geometry/layout references with Blender")
+    bc.add_argument("--no-blender-control", dest="use_blender_control", action="store_false")
+    parser.set_defaults(use_blender_control=None)
+    parser.add_argument("--blender-executable", help="Path or command name for Blender")
+    parser.add_argument("--blender-control-subdir", help="Output subdirectory for Blender control images")
+    parser.add_argument("--blender-control-width", type=int, help="Blender control render width")
+    parser.add_argument("--blender-control-height", type=int, help="Blender control render height")
+    parser.add_argument("--blender-control-strength", type=float, help="0..1 img2img strength for Blender control images")
+    bcf = parser.add_mutually_exclusive_group()
+    bcf.add_argument("--blender-control-fallback", dest="blender_control_fallback", action="store_true", help="Use a PIL layout fallback if Blender is unavailable")
+    bcf.add_argument("--no-blender-control-fallback", dest="blender_control_fallback", action="store_false")
+    parser.set_defaults(blender_control_fallback=None)
     # Validation
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--val-threshold", type=float)
@@ -81,10 +111,26 @@ def parse_args() -> argparse.Namespace:
 def update_config_from_args(config: Config, args: argparse.Namespace) -> Config:
     a = {k: v for k, v in vars(args).items() if v is not None}
     # Model
+    if "image_backend" in a: config.model.image_backend = a["image_backend"]
     if "sd_model" in a: config.model.stable_diffusion_model = a["sd_model"]
+    if "llm_provider" in a: config.model.llm_provider = a["llm_provider"]
     if "llm_model" in a: config.model.llm_model = a["llm_model"]
     if "device" in a: config.model.device = a["device"]
     if "hf_token" in a: config.model.REMOVED_TOKENtoken = a["hf_token"]
+    if "image_api_provider" in a: config.image_api.provider = a["image_api_provider"]
+    if "image_api_model" in a: config.image_api.model = a["image_api_model"]
+    if "image_api_key" in a: config.image_api.api_key = a["image_api_key"]
+    if "image_api_base_url" in a: config.image_api.base_url = a["image_api_base_url"]
+    if "hf_image_provider" in a: config.image_api.hf_provider = a["hf_image_provider"]
+    if "cloudflare_account_id" in a: config.image_api.cloudflare_account_id = a["cloudflare_account_id"]
+    if "cloudflare_api_token" in a:
+        config.image_api.cloudflare_api_token = a["cloudflare_api_token"]
+        config.image_api.api_key = a["cloudflare_api_token"]
+    if "cloudflare_use_multipart" in a and a["cloudflare_use_multipart"] is not None:
+        config.image_api.cloudflare_use_multipart = a["cloudflare_use_multipart"]
+    if "image_api_size" in a: config.image_api.size = a["image_api_size"]
+    if "image_api_quality" in a: config.image_api.quality = a["image_api_quality"]
+    if "image_api_output_format" in a: config.image_api.output_format = a["image_api_output_format"]
     # Generation
     if "guidance_scale" in a: config.generation.guidance_scale = a["guidance_scale"]
     if "num_steps" in a: config.generation.num_inference_steps = a["num_steps"]
@@ -138,6 +184,21 @@ def update_config_from_args(config: Config, args: argparse.Namespace) -> Config:
         config.reference.img2img_strength = max(0.0, min(1.0, a["img2img_strength"]))
     if "reference_resize_mode" in a:
         config.reference.resize_mode = a["reference_resize_mode"]
+    # Blender-generated control/reference images
+    if "use_blender_control" in a and a["use_blender_control"] is not None:
+        config.blender.enabled = a["use_blender_control"]
+    if "blender_executable" in a:
+        config.blender.executable = a["blender_executable"]
+    if "blender_control_subdir" in a:
+        config.blender.output_subdir = a["blender_control_subdir"]
+    if "blender_control_width" in a:
+        config.blender.render_width = a["blender_control_width"]
+    if "blender_control_height" in a:
+        config.blender.render_height = a["blender_control_height"]
+    if "blender_control_strength" in a:
+        config.blender.img2img_strength = max(0.0, min(1.0, a["blender_control_strength"]))
+    if "blender_control_fallback" in a and a["blender_control_fallback"] is not None:
+        config.blender.fallback_to_pil = a["blender_control_fallback"]
     # Validation
     if "validate" in a: config.validation.enabled = a["validate"]
     if "val_threshold" in a: config.validation.similarity_threshold = a["val_threshold"]

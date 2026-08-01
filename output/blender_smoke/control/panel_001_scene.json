@@ -1,0 +1,62 @@
+{
+  "source": "pil_fallback",
+  "image_path": "output/blender_smoke/control/panel_001_layout.png",
+  "scene": {
+    "panel_index": 1,
+    "context": "modern city rooftop at dusk",
+    "scene_text": "rooftop, city, window, table, 35 degrees",
+    "location": "street",
+    "shot": "medium",
+    "camera_angle": "three_quarter",
+    "characters": [
+      {
+        "name": "Jin",
+        "position": [
+          -1.35,
+          0.0,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "right"
+      },
+      {
+        "name": "Raven",
+        "position": [
+          1.35,
+          0.25,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "left"
+      }
+    ],
+    "props": [
+      {
+        "type": "table",
+        "position": [
+          0.0,
+          0.35,
+          0.0
+        ]
+      },
+      {
+        "type": "window",
+        "position": [
+          1.6,
+          2.05,
+          1.35
+        ]
+      }
+    ]
+  },
+  "config": {
+    "enabled": true,
+    "executable": "/Applications/Blender.app/Contents/MacOS/Blender",
+    "output_subdir": "control",
+    "render_width": 384,
+    "render_height": 512,
+    "img2img_strength": 0.34,
+    "fallback_to_pil": true
+  },
+  "fallback_reason": " ArchWarn: ARCH_CACHE_LINE_SIZE != Arch_ObtainCacheLineSize()\n Function: Arch_ValidateAssumptions\n     File: /Users/jonas/blender-dev-deps/build_darwin/deps_arm64/build/usd/src/external_usd/pxr/base/arch/assumptions.cpp\n     Line: 140\n"
+}

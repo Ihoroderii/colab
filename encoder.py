@@ -70,7 +70,7 @@ class VIE_Encoder(nn.Sequential):
         #x *= 0.18215
 
         #return x
-        if noise is None:
+        if noise is None or noise.shape != mean.shape:
             noise = torch.randn_like(mean)
 
         return mean + stdiv * noise

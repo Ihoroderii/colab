@@ -1,0 +1,122 @@
+{
+  "panel": {
+    "panel_number": 1,
+    "title": "Establishing classroom tension",
+    "location": "classroom",
+    "action": "After class, Kai stands by the left side of a classroom table while Maria waits near the window on the right. The room is quiet and tense.",
+    "camera": {
+      "shot": "wide",
+      "angle_degrees": 35.0,
+      "target": "both characters",
+      "mood": "quiet tension"
+    },
+    "characters": [
+      {
+        "name": "Kai",
+        "position": [
+          -1.4,
+          0.0,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "right",
+        "expression": "determined"
+      },
+      {
+        "name": "Maria",
+        "position": [
+          1.4,
+          0.25,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "left",
+        "expression": "serious"
+      }
+    ],
+    "props": [
+      "classroom table",
+      "window",
+      "chairs",
+      "blackboard"
+    ],
+    "dialogue": [
+      {
+        "speaker": null,
+        "text": "After class, the promise returns.",
+        "kind": "narration",
+        "position": [
+          24,
+          24
+        ]
+      }
+    ],
+    "seed": 4101
+  },
+  "prompt": "Demo 01: Classroom Oath. Scenario: Kai meets Maria in an empty classroom after sunset. They speak about a promise they made years ago, and both understand that keeping it will change what happens next.\nPanel 1: After class, Kai stands by the left side of a classroom table while Maria waits near the window on the right. The room is quiet and tense.\nCharacters: Kai, teenage boy protagonist, short messy black hair, dark school jacket, focused eyes, calm but determined expression; Maria, teenage girl, long white hair, neat school uniform, sharp intelligent eyes, quiet serious expression\nSetting and props: classroom, classroom table, window, chairs, blackboard\nCamera: wide establishing shot, 35 degree angle, target both characters\nStyle: detailed black-and-white manga panel, clean ink lineart, screentones, dramatic shadows, professional manga background detail, expressive faces, correct school clothes, no text inside the art, no speech bubbles, preserve the rough composition from the input image.",
+  "negative_prompt": "low quality, blurry, distorted hands, extra limbs, bad anatomy, messy text, watermark, logo, gore, blood, wounds, weapons, explicit violence",
+  "control": {
+    "source": "blender",
+    "image_path": "/Users/ihoroderii/wrk/manga-ai-bot/output/panel_01_blender.png",
+    "metadata_path": "/Users/ihoroderii/wrk/manga-ai-bot/output/control/panel_001_scene.json",
+    "fallback_reason": null,
+    "scene": {
+      "panel_index": 1,
+      "context": "Demo 01: Classroom Oath. Establishing classroom tension. After class, Kai stands by the left side of a classroom table while Maria waits near the window on the right. The room is quiet and tense.",
+      "scene_text": "classroom, wide establishing classroom room 35 degrees, classroom table, window, chairs, blackboard",
+      "location": "classroom",
+      "shot": "wide",
+      "camera_angle": "three_quarter",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            -1.35,
+            0.0,
+            0.0
+          ],
+          "pose": "standing",
+          "facing": "right"
+        },
+        {
+          "name": "Maria",
+          "position": [
+            1.35,
+            0.25,
+            0.0
+          ],
+          "pose": "standing",
+          "facing": "left"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ]
+    }
+  },
+  "image_api": {
+    "provider": "cloudflare",
+    "model": "@cf/runwayml/stable-diffusion-v1-5-img2img",
+    "size": "768x1024",
+    "strength": 0.45,
+    "guidance": 7.5,
+    "seed": 4101,
+    "num_steps": 24,
+    "api_error": "Cloudflare image request failed: 400 {\"errors\":[{\"message\":\"AiError: Bad input: Error: '/num_steps' must be <= 20 (3a954142-5c58-40d0-9b17-a271f249277a)\",\"code\":5006}],\"success\":false,\"result\":{},\"messages\":[]}"
+  }
+}

@@ -1,0 +1,486 @@
+[
+  {
+    "pose": "standing",
+    "path": "output/pose_test/pose_01_standing.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "standing",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 1,
+      "context": "Pose test: standing",
+      "scene_text": "classroom, wide, table, window, standing pose"
+    }
+  },
+  {
+    "pose": "sitting",
+    "path": "output/pose_test/pose_02_sitting.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "sitting",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 2,
+      "context": "Pose test: sitting",
+      "scene_text": "classroom, wide, table, window, sitting pose"
+    }
+  },
+  {
+    "pose": "walking",
+    "path": "output/pose_test/pose_03_walking.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "walking",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 3,
+      "context": "Pose test: walking",
+      "scene_text": "classroom, wide, table, window, walking pose"
+    }
+  },
+  {
+    "pose": "running",
+    "path": "output/pose_test/pose_04_running.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "running",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 4,
+      "context": "Pose test: running",
+      "scene_text": "classroom, wide, table, window, running pose"
+    }
+  },
+  {
+    "pose": "action",
+    "path": "output/pose_test/pose_05_action.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "action",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 5,
+      "context": "Pose test: action",
+      "scene_text": "classroom, wide, table, window, action pose"
+    }
+  },
+  {
+    "pose": "leaning",
+    "path": "output/pose_test/pose_06_leaning.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "leaning",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 6,
+      "context": "Pose test: leaning",
+      "scene_text": "classroom, wide, table, window, leaning pose"
+    }
+  },
+  {
+    "pose": "kneeling",
+    "path": "output/pose_test/pose_07_kneeling.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "kneeling",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 7,
+      "context": "Pose test: kneeling",
+      "scene_text": "classroom, wide, table, window, kneeling pose"
+    }
+  },
+  {
+    "pose": "pointing",
+    "path": "output/pose_test/pose_08_pointing.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "pointing",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 8,
+      "context": "Pose test: pointing",
+      "scene_text": "classroom, wide, table, window, pointing pose"
+    }
+  },
+  {
+    "pose": "reaching",
+    "path": "output/pose_test/pose_09_reaching.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "reaching",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 9,
+      "context": "Pose test: reaching",
+      "scene_text": "classroom, wide, table, window, reaching pose"
+    }
+  },
+  {
+    "pose": "arms_crossed",
+    "path": "output/pose_test/pose_10_arms_crossed.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "arms_crossed",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 10,
+      "context": "Pose test: arms_crossed",
+      "scene_text": "classroom, wide, table, window, arms_crossed pose"
+    }
+  },
+  {
+    "pose": "looking_down",
+    "path": "output/pose_test/pose_11_looking_down.png",
+    "source": "blender",
+    "fallback_reason": null,
+    "scene": {
+      "location": "classroom",
+      "shot": "medium",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "pose": "looking_down",
+          "facing": "camera"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ],
+      "panel_index": 11,
+      "context": "Pose test: looking_down",
+      "scene_text": "classroom, wide, table, window, looking_down pose"
+    }
+  }
+]

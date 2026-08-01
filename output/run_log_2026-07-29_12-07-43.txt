@@ -1,0 +1,55 @@
+=== Manhwa Generation Run Log ===
+Timestamp: 2026-07-29_12-07-43
+Image backend: api
+Model: stabilityai/stable-diffusion-3.5-large
+Fallback model: runwayml/stable-diffusion-v1-5
+Image API provider: cloudflare
+Image API model: @cf/black-forest-labs/flux-2-klein-4b
+Image API size: 1024x1024
+Image API quality: medium
+Device: cpu
+LLM Model: meta-llama/Meta-Llama-3-8B-Instruct:novita
+Reference image: None
+Img2img strength: 0.38
+Blender control enabled: True
+Blender executable: blender
+Blender control strength: 0.34
+
+-- Story (~303 words) --
+Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven spread. Under a dramatic mood, streets hum with a action pulse. Jin discovers a clue—subtle as neon reflected in rain—leading closer to Raven. Promises linger; debts resurface. A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echoes against glass and concrete. Finally, Raven reveals a twist that forces Jin to reconsider allies, motives, and the cost of truth. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Every clue ties to another, a knot tightening around Raven's name and the night itself. Every clue ties to another, a knot tightening around Raven's name and the night itself. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. In a brief stillness, Jin remembers why this began and what it must cost to finish. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. In a brief stillness, Jin remembers why this began and what it must cost to finish. Whispers flow through stairwells, mapping a maze that returns always to the same door. In a brief stillness, Jin remembers why this began and what it must cost to finish. In a brief stillness, Jin remembers why this began and what it must cost to finish. Whispers flow through stairwells, mapping a maze that returns always to the same door. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer.
+
+
+-- Scenario --
+[
+  {
+    "context": "Episode 1: Rooftop Oath",
+    "scene": [
+      "night",
+      "rain",
+      "alley",
+      "city",
+      "rooftop"
+    ],
+    "speaker": "Raven",
+    "speech": "Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven sp"
+  }
+]
+
+
+-- Panel 1 --
+Context: Episode 1: Rooftop Oath
+Scene: night, rain, alley, city, rooftop
+Speaker: Raven
+Speech: Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven sp
+Prompt: Episode 1: Rooftop Oath. night, rain, alley, city, rooftop, Korean manhwa style, detailed coloring, dramatic lighting, highly detailed faces, modern fashion, webtoon format, digital art, clean lineart, vibrant colors, professional coloring, high contrast, cinematic composition
+Negative: blurry, deformed face, extra eyes, extra limbs, bad anatomy, ugly, distorted, chibi style, super deformed, anime style, manga style, sketch, watercolor
+Generation mode: api_img2img
+Reference source: output/control/panel_001_layout.png
+Img2img strength: 0.34
+Control source: pil_fallback
+Control scene: output/control/panel_001_scene.json
+Seed: None
+Output: output/panel_1.png
+
+-- Export --
+Slice: output/export/manhwa_chapter_01.png

@@ -1,0 +1,120 @@
+{
+  "panel": {
+    "panel_number": 2,
+    "title": "Kai close-up",
+    "location": "classroom",
+    "action": "Close-up on Kai as he lowers his voice. The table edge and window light frame his face.",
+    "camera": {
+      "shot": "close_up",
+      "angle_degrees": 35.0,
+      "target": "Kai",
+      "mood": "resolve"
+    },
+    "characters": [
+      {
+        "name": "Kai",
+        "position": [
+          -0.35,
+          0.0,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "camera",
+        "expression": "determined"
+      },
+      {
+        "name": "Maria",
+        "position": [
+          1.45,
+          0.3,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "left",
+        "expression": "watching"
+      }
+    ],
+    "props": [
+      "classroom table",
+      "window"
+    ],
+    "dialogue": [
+      {
+        "speaker": "Kai",
+        "text": "I won't run from it this time.",
+        "kind": "speech",
+        "position": [
+          36,
+          36
+        ]
+      }
+    ],
+    "seed": 4102
+  },
+  "prompt": "Demo 01: Classroom Oath. Scenario: Kai meets Maria in an empty classroom after sunset. They speak about a promise they made years ago, and both understand that keeping it will change what happens next.\nPanel 2: Close-up on Kai as he lowers his voice. The table edge and window light frame his face.\nCharacters: Kai, teenage boy protagonist, short messy black hair, dark school jacket, focused eyes, calm but determined expression; Maria, teenage girl, long white hair, neat school uniform, sharp intelligent eyes, quiet serious expression\nSetting and props: classroom, classroom table, window\nCamera: close-up facial expression shot, 35 degree angle, target Kai\nStyle: detailed black-and-white manga panel, clean ink lineart, screentones, dramatic shadows, professional manga background detail, expressive faces, correct school clothes, no text inside the art, no speech bubbles, preserve the rough composition from the input image.",
+  "negative_prompt": "low quality, blurry, distorted hands, extra limbs, bad anatomy, messy text, watermark, logo, gore, blood, wounds, weapons, explicit violence",
+  "control": {
+    "source": "blender",
+    "image_path": "/Users/ihoroderii/wrk/manga-ai-bot/output/panel_02_blender.png",
+    "metadata_path": "/Users/ihoroderii/wrk/manga-ai-bot/output/control/panel_002_scene.json",
+    "fallback_reason": null,
+    "scene": {
+      "panel_index": 2,
+      "context": "Demo 01: Classroom Oath. Kai close-up. Close-up on Kai as he lowers his voice. The table edge and window light frame his face.",
+      "scene_text": "classroom, close-up face expression classroom, classroom table, window",
+      "location": "classroom",
+      "shot": "close",
+      "camera_angle": "eye_level",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            -1.35,
+            0.0,
+            0.0
+          ],
+          "pose": "running",
+          "facing": "right"
+        },
+        {
+          "name": "Maria",
+          "position": [
+            1.35,
+            0.25,
+            0.0
+          ],
+          "pose": "running",
+          "facing": "left"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ]
+    }
+  },
+  "image_api": {
+    "provider": "cloudflare",
+    "model": "@cf/runwayml/stable-diffusion-v1-5-img2img",
+    "size": "768x1024",
+    "strength": 0.45,
+    "guidance": 7.5,
+    "seed": 4102,
+    "num_steps": 24,
+    "api_error": "Cloudflare image request failed: 400 {\"errors\":[{\"message\":\"AiError: Bad input: Error: '/num_steps' must be <= 20 (7b68ec1d-5507-4d1a-a00b-36aa8fb15e81)\",\"code\":5006}],\"success\":false,\"result\":{},\"messages\":[]}"
+  }
+}

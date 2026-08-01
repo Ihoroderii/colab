@@ -1,0 +1,52 @@
+{
+  "source": "blender",
+  "image_path": "output/pose_test/renders/panel_011_layout.png",
+  "scene": {
+    "location": "classroom",
+    "shot": "medium",
+    "camera_angle": "eye_level",
+    "characters": [
+      {
+        "name": "Kai",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "pose": "looking_down",
+        "facing": "camera"
+      }
+    ],
+    "props": [
+      {
+        "type": "table",
+        "position": [
+          0.0,
+          0.35,
+          0.0
+        ]
+      },
+      {
+        "type": "window",
+        "position": [
+          1.6,
+          2.05,
+          1.35
+        ]
+      }
+    ],
+    "panel_index": 11,
+    "context": "Pose test: looking_down",
+    "scene_text": "classroom, wide, table, window, looking_down pose"
+  },
+  "config": {
+    "enabled": true,
+    "executable": "/Applications/Blender.app/Contents/MacOS/Blender",
+    "output_subdir": "renders",
+    "render_width": 512,
+    "render_height": 768,
+    "img2img_strength": 0.34,
+    "fallback_to_pil": true
+  },
+  "fallback_reason": null
+}

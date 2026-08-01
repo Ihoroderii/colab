@@ -1,0 +1,139 @@
+=== Manhwa Generation Run Log ===
+Timestamp: 2026-07-28_11-04-32
+Image backend: api
+Model: stabilityai/stable-diffusion-3.5-large
+Fallback model: runwayml/stable-diffusion-v1-5
+Image API provider: huggingface
+Image API model: black-forest-labs/FLUX.1-dev
+Image API size: 1024x1024
+Image API quality: medium
+Device: cpu
+LLM Model: meta-llama/Meta-Llama-3-8B-Instruct:novita
+Reference image: None
+Img2img strength: 0.38
+Blender control enabled: True
+Blender executable: blender
+Blender control strength: 0.34
+
+-- Story (~304 words) --
+Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven spread. Under a dramatic mood, streets hum with a action pulse. Jin discovers a clue—subtle as neon reflected in rain—leading closer to Raven. Promises linger; debts resurface. A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echoes against glass and concrete. Finally, Raven reveals a twist that forces Jin to reconsider allies, motives, and the cost of truth. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. In a brief stillness, Jin remembers why this began and what it must cost to finish. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. Old messages flicker on cracked screens; Jin reads between the flickers for intent. Whispers flow through stairwells, mapping a maze that returns always to the same door. In a brief stillness, Jin remembers why this began and what it must cost to finish. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Every clue ties to another, a knot tightening around Raven's name and the night itself. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. Every clue ties to another, a knot tightening around Raven's name and the night itself. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances.
+
+
+-- Scenario --
+[
+  {
+    "context": "Episode 1: Rooftop Oath",
+    "scene": [
+      "rain",
+      "city",
+      "rooftop",
+      "street",
+      "neon"
+    ],
+    "speaker": "Raven",
+    "speech": "Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven sp"
+  },
+  {
+    "context": "A confrontation simmers in alleys and rooftops",
+    "scene": [
+      "night",
+      "alley",
+      "rooftop",
+      "ice",
+      "street"
+    ],
+    "speaker": "Raven",
+    "speech": "A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echo"
+  },
+  {
+    "context": "In a brief stillness, Jin remembers why this began and what it must cost to fini",
+    "scene": [
+      "rain",
+      "city",
+      "light"
+    ],
+    "speaker": "Narrator",
+    "speech": "In a brief stillness, Jin remembers why this began and what it must cost to finish. Rain scatters li"
+  },
+  {
+    "context": "Rain scatters light into sharp shards; the city becomes a prism of suspicion and",
+    "scene": [
+      "night",
+      "rain",
+      "city",
+      "light"
+    ],
+    "speaker": "Raven",
+    "speech": "Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. Footsteps"
+  }
+]
+
+
+-- Panel 1 --
+Context: Episode 1: Rooftop Oath
+Scene: rain, city, rooftop, street, neon
+Speaker: Raven
+Speech: Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven sp
+Prompt: Episode 1: Rooftop Oath. rain, city, rooftop, street, neon, Korean manhwa style, detailed coloring, dramatic lighting, highly detailed faces, modern fashion, webtoon format, digital art, clean lineart, vibrant colors, professional coloring, high contrast, cinematic composition
+Negative: blurry, deformed face, extra eyes, extra limbs, bad anatomy, ugly, distorted, chibi style, super deformed, anime style, manga style, sketch, watercolor
+Generation mode: api_img2img
+Reference source: output/control/panel_001_layout.png
+Img2img strength: 0.34
+Control source: pil_fallback
+Control scene: output/control/panel_001_scene.json
+Seed: None
+Output: output/panel_1.png
+
+-- Panel 2 --
+Context: A confrontation simmers in alleys and rooftops
+Scene: night, alley, rooftop, ice, street
+Speaker: Raven
+Speech: A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echo
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_002_scene.json
+Error: 402 Client Error: Payment Required for url: https://router.huggingface.co/fal-ai/fal-ai/flux/dev (Request ID: Root=1-6a6870a6-216a2327078d68c700cc6572;5b39381a-0e68-4585-afde-c1c55c65a271)
+
+You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.
+Seed: None
+Output: output/panel_2.png
+
+-- Panel 3 --
+Context: In a brief stillness, Jin remembers why this began and what it must cost to fini
+Scene: rain, city, light
+Speaker: Narrator
+Speech: In a brief stillness, Jin remembers why this began and what it must cost to finish. Rain scatters li
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_003_scene.json
+Error: 402 Client Error: Payment Required for url: https://router.huggingface.co/fal-ai/fal-ai/flux/dev (Request ID: Root=1-6a6870a7-4dc415083a65ed4b02e0a6e5;16b2ccee-8b31-4c98-958b-8ae2e6c2d2a0)
+
+You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.
+Seed: None
+Output: output/panel_3.png
+
+-- Panel 4 --
+Context: Rain scatters light into sharp shards; the city becomes a prism of suspicion and
+Scene: night, rain, city, light
+Speaker: Raven
+Speech: Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. Footsteps
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_004_scene.json
+Error: 402 Client Error: Payment Required for url: https://router.huggingface.co/fal-ai/fal-ai/flux/dev (Request ID: Root=1-6a6870a7-7e8033a44402209001d2db25;3502ee33-e4fd-4e23-8158-ea337d083095)
+
+You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.
+Seed: None
+Output: output/panel_4.png
+
+-- Export --
+Slice: output/export/manhwa_chapter_01.png
+Slice: output/export/manhwa_chapter_02.png
+Slice: output/export/manhwa_chapter_03.png
+Slice: output/export/manhwa_chapter_04.png

@@ -69,6 +69,290 @@ REFERENCE_RESIZE_MODE=fit
 
 Use lower `IMG2IMG_STRENGTH` values, such as `0.25`-`0.4`, to keep the screenshot layout closer. Use higher values, such as `0.5`-`0.7`, when you want more visible changes.
 
+## Use Blender as composition control
+
+To make the bot generate a rough 3D composition per panel before diffusion, enable Blender control:
+
+```bash
+python -m manga_ai \
+  --use-blender-control \
+  --blender-control-strength 0.34 \
+  --genre drama \
+  --setting "room with a table and window" \
+  --protagonist Kai \
+  --antagonist Maria \
+  --panels 4 \
+  --export
+```
+
+This writes per-panel control images and scene metadata to `output/control/`, then uses each control image as the img2img layout reference for the final manga panel. Blender is responsible for rough geometry, camera, character placement, and props; diffusion is still responsible for the final manga style.
+
+Environment equivalents:
+
+```bash
+USE_BLENDER_CONTROL=1
+BLENDER_EXECUTABLE=blender
+BLENDER_CONTROL_STRENGTH=0.34
+BLENDER_CONTROL_WIDTH=768
+BLENDER_CONTROL_HEIGHT=1024
+```
+
+If Blender is not installed, the bot falls back to a simple PIL layout sketch by default. Disable that with `--no-blender-control-fallback` if you want Blender absence to skip control generation.
+
+## Use an image API instead of local diffusion
+
+To avoid downloading or running a diffusion model on your laptop, use the API backend:
+
+```bash
+export OPENAI_API_KEY=your_api_key
+
+PYTHONPATH=src python3 -m manga_ai \
+  --image-backend api \
+  --image-api-provider openai \
+  --image-api-model gpt-image-1 \
+  --image-api-size 1024x1024 \
+  --image-api-quality medium \
+  --use-blender-control \
+  --blender-control-strength 0.34 \
+  --panels 4 \
+  --export
+```
+
+In this mode, the laptop only runs story planning, optional Blender/control rendering, bubble placement, and chapter assembly. Final manga artwork is generated through the remote image API.
+If you also want remote LLM story generation through the Hugging Face router, set `HF_TOKEN` or `LLM_API_KEY` separately.
+
+Environment equivalents:
+
+```bash
+IMAGE_BACKEND=api
+IMAGE_API_PROVIDER=openai
+IMAGE_API_MODEL=gpt-image-1
+IMAGE_API_SIZE=1024x1024
+IMAGE_API_QUALITY=medium
+OPENAI_API_KEY=your_api_key
+```
+
+For a Hugging Face model through Hugging Face Inference Providers:
+
+```bash
+export HF_TOKEN=your_hugging_face_token
+
+PYTHONPATH=src python3 -m manga_ai \
+  --image-backend api \
+  --image-api-provider huggingface \
+  --image-api-model black-forest-labs/FLUX.1-dev \
+  --hf-image-provider fal-ai \
+  --image-api-size 1024x1024 \
+  --use-blender-control \
+  --panels 4 \
+  --export
+```
+
+You can swap `--image-api-model` for another Hugging Face image model that supports `text-to-image` or `image-to-image`. When Blender control is enabled, the bot uses Hugging Face `image-to-image`; without a control/reference image, it uses `text-to-image`.
+
+For Cloudflare Workers AI:
+
+```bash
+export CLOUDFLARE_ACCOUNT_ID=your_account_id
+export CLOUDFLARE_API_TOKEN=your_workers_ai_token
+
+PYTHONPATH=src python3 -m manga_ai \
+  --image-backend api \
+  --image-api-provider cloudflare \
+  --image-api-model @cf/black-forest-labs/flux-2-klein-4b \
+  --image-api-size 1024x1024 \
+  --cloudflare-use-multipart \
+  --use-blender-control \
+  --panels 4 \
+  --export
+```
+
+Environment equivalents:
+
+```bash
+IMAGE_BACKEND=api
+IMAGE_API_PROVIDER=cloudflare
+IMAGE_API_MODEL=@cf/black-forest-labs/flux-2-klein-4b
+IMAGE_API_SIZE=1024x1024
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+CLOUDFLARE_API_TOKEN=your_workers_ai_token
+CLOUDFLARE_USE_MULTIPART=true
+USE_BLENDER_CONTROL=true
+```
+
+Cloudflare FLUX.2 Klein models use multipart form data and support reference inputs named `input_image_0`, `input_image_1`, etc. The bot sends the Blender/PIL control image as `input_image_0` when reference conditioning is available.
+
+If Cloudflare returns `401 Authentication error`, recreate the token from **Workers AI > Use REST API** or make a custom account-scoped token with `Workers AI Read` and `Workers AI Edit`, then confirm `CLOUDFLARE_ACCOUNT_ID` is from the same Cloudflare account.
+
+To use Cloudflare for story and panel planning too:
+
+```bash
+LLM_PROVIDER=cloudflare
+LLM_MODEL=@cf/meta/llama-3.1-8b-instruct
+```
+
+With those set, the prototype path is:
+
+```text
+Cloudflare LLM -> panel planner -> Blender/PIL control -> Cloudflare image API -> bubbles/export
+```
+
+## Run the v0.1 end-to-end demo
+
+The small demo uses a fixed 3-panel classroom plan so you can verify the full pipeline before improving the story planner:
+
+```bash
+menv/bin/python generate_demo.py scenario.txt
+```
+
+If no scenario file is passed, it uses a built-in short scenario. The demo writes:
+
+```text
+output/panel_01_blender.png
+output/panel_01_manga.png
+output/panel_02_blender.png
+output/panel_02_manga.png
+output/panel_03_blender.png
+output/panel_03_manga.png
+output/page_01.png
+```
+
+It forces Cloudflare image-to-image mode with `@cf/runwayml/stable-diffusion-v1-5-img2img`, sends the Blender/PIL control render as `image_b64`, then draws speech bubbles locally.
+
+The demo also runs deterministic manga style normalization before bubbles are added:
+
+```text
+raw generated panel
+-> grayscale resize
+-> fixed contrast/gamma
+-> optional histogram match to references/manga_style_reference.png
+-> fixed screentone dots
+-> line sharpening/grain
+-> speech bubbles
+-> page composition
+-> light page-wide normalization
+```
+
+If you have one panel with the exact manga look you want, save it as:
+
+```text
+references/manga_style_reference.png
+```
+
+Otherwise the demo uses the first generated raw panel as a temporary reference. The demo keeps comparison files such as `panel_01_manga_raw.png`, `panel_01_manga_normalized.png`, and `page_01_before_page_normalization.png`.
+
+Environment switches:
+
+```bash
+STYLE_NORMALIZATION_ENABLED=true
+STYLE_REFERENCE_IMAGE=references/manga_style_reference.png
+STYLE_NORMALIZATION_GAMMA=0.96
+STYLE_NORMALIZATION_CONTRAST=1.08
+STYLE_NORMALIZATION_GRAIN_STRENGTH=0.02
+```
+
+## Test Control Poses
+
+Generate a visual pose sheet without launching Blender:
+
+```bash
+menv/bin/python -B test_poses.py --backend pil
+```
+
+Generate the same sheet through Blender:
+
+```bash
+menv/bin/python -B test_poses.py --backend blender
+```
+
+Run the automated pose/control tests:
+
+```bash
+PYTHONPATH=src menv/bin/python -B -m pytest tests/test_pose_control.py -q
+```
+
+## Post-Processing Package
+
+Generated manga panels are normalized by the split `manga_ai.post_processing` package:
+
+```text
+src/manga_ai/post_processing/
+├── pipeline.py
+├── config.py
+├── image_loader.py
+├── resize.py
+├── tone_normalizer.py
+├── histogram_matcher.py
+├── line_enhancer.py
+├── screentones.py
+├── grain.py
+├── metrics.py
+├── outlier_detector.py
+└── ai_restyler.py
+```
+
+The compatibility import still works:
+
+```python
+from manga_ai.postprocess.style_normalization import normalize_panel_image
+```
+
+New code should import from:
+
+```python
+from manga_ai.post_processing import MangaStyleConfig, normalize_panel_image
+```
+
+Run the post-processing tests:
+
+```bash
+PYTHONPATH=src menv/bin/python -B -m pytest tests/test_post_processing.py -q
+```
+
+Run every post-processing module test separately:
+
+```bash
+PYTHONPATH=src menv/bin/python -B -m pytest tests/test_post_processing_modules.py -q
+```
+
+Run the focused automated suite for the manga bot modules:
+
+```bash
+PYTHONPATH=src menv/bin/python -B -m pytest \
+  tests/test_effects.py \
+  tests/test_integrations.py \
+  tests/test_models.py \
+  tests/test_pipelines.py \
+  tests/test_post_processing.py \
+  tests/test_post_processing_modules.py \
+  tests/test_pose_control.py \
+  tests/test_runners.py \
+  -q
+```
+
+## Use the sibling bubble project
+
+The manga bot can use your separate `../bubble` project through its `manhwa_bubbles` package. This is now the preferred bubble backend, with fallback to the old internal PIL bubbles if the package is not available.
+
+```bash
+BUBBLE_BACKEND=manhwa_bubbles
+BUBBLE_PROJECT_PATH=../bubble
+BUBBLE_USE_YOLO=false
+BUBBLE_PREFER_CAIRO=true
+BUBBLE_FALLBACK_TO_INTERNAL=true
+```
+
+The bubble stage runs after panel style normalization and before page composition:
+
+```text
+Cloudflare image
+-> style normalization
+-> manhwa_bubbles
+-> page composition
+```
+
+`BUBBLE_USE_YOLO=false` avoids downloading YOLO models. The bot passes approximate character positions from its panel plan/control data instead.
+
 ## Configure tokens once
 
 You can set your Hugging Face or Router token once and all runners will pick it up.
@@ -85,7 +369,7 @@ echo 'HF_TOKEN=your_token_here' >> .env
 HF_TOKEN
 HF_API_KEY
 HUGGING_FACE_HUB_TOKEN
-OPENAI_API_KEY
+LLM_API_KEY
 ```
 
 - Colab/remote usage:

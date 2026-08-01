@@ -1,0 +1,45 @@
+{
+  "source": "blender",
+  "image_path": "output/control/panel_003_layout.png",
+  "scene": {
+    "panel_index": 3,
+    "context": "A rival faction, one that Jin had long suspected was operating in the shadows, h",
+    "scene_text": "city, shadow",
+    "location": "street",
+    "shot": "medium",
+    "camera_angle": "eye_level",
+    "characters": [
+      {
+        "name": "Jin",
+        "position": [
+          -1.35,
+          0.0,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "right"
+      },
+      {
+        "name": "Raven",
+        "position": [
+          1.35,
+          0.25,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "left"
+      }
+    ],
+    "props": []
+  },
+  "config": {
+    "enabled": true,
+    "executable": "/Applications/Blender.app/Contents/MacOS/Blender",
+    "output_subdir": "control",
+    "render_width": 768,
+    "render_height": 1024,
+    "img2img_strength": 0.34,
+    "fallback_to_pil": true
+  },
+  "fallback_reason": null
+}

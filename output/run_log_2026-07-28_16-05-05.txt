@@ -1,0 +1,133 @@
+=== Manhwa Generation Run Log ===
+Timestamp: 2026-07-28_16-05-05
+Image backend: api
+Model: stabilityai/stable-diffusion-3.5-large
+Fallback model: runwayml/stable-diffusion-v1-5
+Image API provider: huggingface
+Image API model: black-forest-labs/FLUX.1-dev
+Image API size: 1024x1024
+Image API quality: medium
+Device: cpu
+LLM Model: meta-llama/Meta-Llama-3-8B-Instruct:novita
+Reference image: None
+Img2img strength: 0.38
+Blender control enabled: True
+Blender executable: blender
+Blender control strength: 0.34
+
+-- Story (~302 words) --
+Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven spread. Under a dramatic mood, streets hum with a action pulse. Jin discovers a clue—subtle as neon reflected in rain—leading closer to Raven. Promises linger; debts resurface. A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echoes against glass and concrete. Finally, Raven reveals a twist that forces Jin to reconsider allies, motives, and the cost of truth. Old messages flicker on cracked screens; Jin reads between the flickers for intent. Every clue ties to another, a knot tightening around Raven's name and the night itself. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Old messages flicker on cracked screens; Jin reads between the flickers for intent. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Whispers flow through stairwells, mapping a maze that returns always to the same door. Whispers flow through stairwells, mapping a maze that returns always to the same door. Old messages flicker on cracked screens; Jin reads between the flickers for intent. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. Whispers flow through stairwells, mapping a maze that returns always to the same door. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Old messages flicker on cracked screens; Jin reads between the flickers for intent. Every clue ties to another, a knot tightening around Raven's name and the night itself. Whispers flow through stairwells, mapping a maze that returns always to the same door.
+
+
+-- Scenario --
+[
+  {
+    "context": "Episode 1: Rooftop Oath",
+    "scene": [
+      "rain",
+      "alley",
+      "city",
+      "rooftop",
+      "street"
+    ],
+    "speaker": "Raven",
+    "speech": "Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven sp"
+  },
+  {
+    "context": "As the night deepens, choices narrow; each step echoes against glass and concret",
+    "scene": [
+      "night",
+      "ice"
+    ],
+    "speaker": "Raven",
+    "speech": "As the night deepens, choices narrow; each step echoes against glass and concrete. Finally, Raven re"
+  },
+  {
+    "context": "Footsteps blur with sirens; the skyline watches, indifferent yet witness to ever",
+    "scene": [
+      "street"
+    ],
+    "speaker": "Raven",
+    "speech": "Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Whispers flow"
+  },
+  {
+    "context": "Whispers flow through stairwells, mapping a maze that returns always to the same",
+    "scene": [
+      "night",
+      "rooftop"
+    ],
+    "speaker": "Raven",
+    "speech": "Whispers flow through stairwells, mapping a maze that returns always to the same door. From the roof"
+  }
+]
+
+
+-- Panel 1 --
+Context: Episode 1: Rooftop Oath
+Scene: rain, alley, city, rooftop, street
+Speaker: Raven
+Speech: Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven sp
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_001_scene.json
+Error: 402 Client Error: Payment Required for url: https://router.huggingface.co/fal-ai/fal-ai/flux/dev (Request ID: Root=1-6a68b712-12f0a038716cf7bf6753106f;4ce4739a-f763-4164-9c12-f8fc93dcd1b0)
+
+You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.
+Seed: None
+Output: output/panel_1.png
+
+-- Panel 2 --
+Context: As the night deepens, choices narrow; each step echoes against glass and concret
+Scene: night, ice
+Speaker: Raven
+Speech: As the night deepens, choices narrow; each step echoes against glass and concrete. Finally, Raven re
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_002_scene.json
+Error: 402 Client Error: Payment Required for url: https://router.huggingface.co/fal-ai/fal-ai/flux/dev (Request ID: Root=1-6a68b712-46d1d968606c6ebe4ca833ae;0aa8c064-6c1d-42ca-a66f-e2661ed3b23c)
+
+You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.
+Seed: None
+Output: output/panel_2.png
+
+-- Panel 3 --
+Context: Footsteps blur with sirens; the skyline watches, indifferent yet witness to ever
+Scene: street
+Speaker: Raven
+Speech: Footsteps blur with sirens; the skyline watches, indifferent yet witness to every vow. Whispers flow
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_003_scene.json
+Error: 402 Client Error: Payment Required for url: https://router.huggingface.co/fal-ai/fal-ai/flux/dev (Request ID: Root=1-6a68b712-4cccf18e2358ae4724855939;40b7400f-039e-49f1-bf29-1ff06ce47279)
+
+You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.
+Seed: None
+Output: output/panel_3.png
+
+-- Panel 4 --
+Context: Whispers flow through stairwells, mapping a maze that returns always to the same
+Scene: night, rooftop
+Speaker: Raven
+Speech: Whispers flow through stairwells, mapping a maze that returns always to the same door. From the roof
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_004_scene.json
+Error: 402 Client Error: Payment Required for url: https://router.huggingface.co/fal-ai/fal-ai/flux/dev (Request ID: Root=1-6a68b713-330c4b2b66e7567166fc4d42;ffdb783f-8276-4c4d-a0ec-4b76d6c14189)
+
+You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.
+Seed: None
+Output: output/panel_4.png
+
+-- Export --
+Slice: output/export/manhwa_chapter_01.png
+Slice: output/export/manhwa_chapter_02.png
+Slice: output/export/manhwa_chapter_03.png
+Slice: output/export/manhwa_chapter_04.png

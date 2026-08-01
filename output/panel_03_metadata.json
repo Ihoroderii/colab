@@ -1,0 +1,121 @@
+{
+  "panel": {
+    "panel_number": 3,
+    "title": "Maria answer",
+    "location": "classroom",
+    "action": "Over Maria's shoulder toward Kai. Maria answers with a calm but serious expression while the city light cuts through the classroom window.",
+    "camera": {
+      "shot": "over_shoulder",
+      "angle_degrees": 35.0,
+      "target": "Kai from Maria shoulder",
+      "mood": "dramatic"
+    },
+    "characters": [
+      {
+        "name": "Kai",
+        "position": [
+          -1.1,
+          0.15,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "right",
+        "expression": "surprised"
+      },
+      {
+        "name": "Maria",
+        "position": [
+          1.2,
+          0.0,
+          0.0
+        ],
+        "pose": "standing",
+        "facing": "left",
+        "expression": "serious"
+      }
+    ],
+    "props": [
+      "classroom table",
+      "window",
+      "chairs"
+    ],
+    "dialogue": [
+      {
+        "speaker": "Maria",
+        "text": "Then keep your oath, Kai.",
+        "kind": "speech",
+        "position": [
+          32,
+          34
+        ]
+      }
+    ],
+    "seed": 4103
+  },
+  "prompt": "Demo 01: Classroom Oath. Scenario: Kai meets Maria in an empty classroom after sunset. They speak about a promise they made years ago, and both understand that keeping it will change what happens next.\nPanel 3: Over Maria's shoulder toward Kai. Maria answers with a calm but serious expression while the city light cuts through the classroom window.\nCharacters: Kai, teenage boy protagonist, short messy black hair, dark school jacket, focused eyes, calm but determined expression; Maria, teenage girl, long white hair, neat school uniform, sharp intelligent eyes, quiet serious expression\nSetting and props: classroom, classroom table, window, chairs\nCamera: over-the-shoulder composition, 35 degree angle, target Kai from Maria shoulder\nStyle: detailed black-and-white manga panel, clean ink lineart, screentones, dramatic shadows, professional manga background detail, expressive faces, correct school clothes, no text inside the art, no speech bubbles, preserve the rough composition from the input image.",
+  "negative_prompt": "low quality, blurry, distorted hands, extra limbs, bad anatomy, messy text, watermark, logo, gore, blood, wounds, weapons, explicit violence",
+  "control": {
+    "source": "blender",
+    "image_path": "/Users/ihoroderii/wrk/manga-ai-bot/output/panel_03_blender.png",
+    "metadata_path": "/Users/ihoroderii/wrk/manga-ai-bot/output/control/panel_003_scene.json",
+    "fallback_reason": null,
+    "scene": {
+      "panel_index": 3,
+      "context": "Demo 01: Classroom Oath. Maria answer. Over Maria's shoulder toward Kai. Maria answers with a calm but serious expression while the city light cuts through the classroom window.",
+      "scene_text": "classroom, over shoulder classroom 35 degrees, classroom table, window, chairs",
+      "location": "classroom",
+      "shot": "close",
+      "camera_angle": "three_quarter",
+      "characters": [
+        {
+          "name": "Kai",
+          "position": [
+            -1.35,
+            0.0,
+            0.0
+          ],
+          "pose": "standing",
+          "facing": "right"
+        },
+        {
+          "name": "Maria",
+          "position": [
+            1.35,
+            0.25,
+            0.0
+          ],
+          "pose": "standing",
+          "facing": "left"
+        }
+      ],
+      "props": [
+        {
+          "type": "table",
+          "position": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        },
+        {
+          "type": "window",
+          "position": [
+            1.6,
+            2.05,
+            1.35
+          ]
+        }
+      ]
+    }
+  },
+  "image_api": {
+    "provider": "cloudflare",
+    "model": "@cf/runwayml/stable-diffusion-v1-5-img2img",
+    "size": "768x1024",
+    "strength": 0.45,
+    "guidance": 7.5,
+    "seed": 4103,
+    "num_steps": 24,
+    "api_error": "Cloudflare image request failed: 400 {\"errors\":[{\"message\":\"AiError: Bad input: Error: '/num_steps' must be <= 20 (829dee87-1b92-4fff-ae67-5a83557e4cca)\",\"code\":5006}],\"success\":false,\"result\":{},\"messages\":[]}"
+  }
+}

@@ -9,7 +9,10 @@ import json, re, datetime
 from typing import Any, List, Dict
 import os
 import random
-from openai import OpenAI
+try:
+    from openai import OpenAI
+except ImportError:  # Allows fallback generation without the optional client installed.
+    OpenAI = None
 
 
 def safe_parse_json(raw: str):
@@ -66,7 +69,7 @@ def _random_defaults(config):
 
 def _fallback_scenario(config) -> List[Dict[str, Any]]:
     _random_defaults(config)
-    n = max(2, int(getattr(config.scenario, "panels", 6)))
+    n = max(1, int(getattr(config.scenario, "panels", 6)))
     ctx = getattr(config.scenario, "setting", "city at night")
     prot = getattr(config.scenario, "protagonist", "Hero")
     ant = getattr(config.scenario, "antagonist", "Nemesis")
@@ -178,7 +181,12 @@ def generate_story(config, client: OpenAI | None, target_words: int = 300) -> st
         )
         return completion.choices[0].message.content.strip()
 
-    result = _ask_story(target_words)
+    try:
+        result = _ask_story(target_words)
+    except Exception as e:
+        import logging as _logging
+        _logging.getLogger(__name__).error("LLM story call failed: %s -- using fallback story", e)
+        return _fallback_story(config, target_words)
     if _count_words(result) >= target_words * 0.5:
         return result
     return _fallback_story(config, target_words)
@@ -268,7 +276,7 @@ def panels_from_story(config, client: OpenAI | None, story_text: str) -> List[Di
     import logging as _logging
     _logger = _logging.getLogger(__name__)
 
-    n = max(2, int(getattr(config.scenario, "panels", 6)))
+    n = max(1, int(getattr(config.scenario, "panels", 6)))
 
     if client is None:
         _logger.warning("No LLM client -- using text-based fallback for panel scenario")

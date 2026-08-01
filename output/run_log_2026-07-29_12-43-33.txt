@@ -1,0 +1,63 @@
+=== Manhwa Generation Run Log ===
+Timestamp: 2026-07-29_12-43-33
+Image backend: api
+Model: stabilityai/stable-diffusion-3.5-large
+Fallback model: runwayml/stable-diffusion-v1-5
+Image API provider: cloudflare
+Image API model: @cf/black-forest-labs/flux-2-klein-4b
+Image API size: 1024x1024
+Image API quality: medium
+Device: cpu
+LLM Model: @cf/meta/llama-3.1-8b-instruct
+Reference image: None
+Img2img strength: 0.38
+Blender control enabled: True
+Blender executable: blender
+Blender control strength: 0.34
+
+-- Story (~351 words) --
+As the last wisps of sunlight dissipated beyond the concrete jungle, casting a deep orange glow over the city, Jin stood poised on the rooftop, the wind whipping his dark hair into a frenzy. Below him, the streets hummed with the muted chatter of pedestrians and the distant wail of sirens. He gazed out at the endless expanse of towering skyscrapers, his eyes narrowed against the chill of the evening air.
+
+Jin's thoughts were consumed by a single figure: Raven. The whispers of her exploits had spread like wildfire through the city's underworld, striking fear into the hearts of even the most hardened gang members. Her name was whispered in hushed tones, a mix of awe and terror that Jin couldn't quite explain. He'd heard stories of her razor-sharp instincts and deadly precision, but he refused to believe them.
+
+A sudden gust buffeted him, sending Jin stumbling backward against the rooftop's railing. He regained his balance, his eyes scanning the horizon for any sign of his quarry. That's when he saw her: a fleeting glimpse of Raven's dark silhouette perched atop a nearby skyscraper, her long coat billowing behind her like a raven's wings.
+
+For a moment, Jin forgot to breathe. The wind died, and an unsettling stillness fell over the rooftop. It was as if the entire city held its breath, waiting for the inevitable confrontation. Raven's eyes locked onto Jin's, a spark of recognition igniting within their depths. He felt a shiver run down his spine as she vanished into the shadows, leaving him with a single, haunting message scrawled across the rooftop's wall in bold, crimson letters: "You're next, Jin."
+
+As the wind picked up once more, Jin's gaze remained fixed on the message, his heart racing with a mix of fear and determination. He knew that this was more than just a threat – it was a challenge. And Jin, fueled by a burning need for justice, was ready to take on the shadows themselves to prove his mettle. The rooftop oath had been made, and Jin was willing to stake everything on the promise of vengeance.
+
+
+-- Scenario --
+[
+  {
+    "context": "As the last wisps of sunlight dissipated beyond the concrete jungle, casting a d",
+    "scene": [
+      "city",
+      "rooftop",
+      "shadow",
+      "glow",
+      "dark"
+    ],
+    "speaker": "Jin",
+    "speech": "You're next, Jin."
+  }
+]
+
+
+-- Panel 1 --
+Context: As the last wisps of sunlight dissipated beyond the concrete jungle, casting a d
+Scene: city, rooftop, shadow, glow, dark
+Speaker: Jin
+Speech: You're next, Jin.
+Prompt: As the last wisps of sunlight dissipated beyond the concrete jungle, casting a d. city, rooftop, shadow, glow, dark, Korean webtoon manhwa illustration, detailed coloring, dramatic lighting, highly detailed faces, modern fashion, webtoon format, digital art, clean lineart, vibrant colors, professional coloring, high contrast, cinematic composition, non-graphic dramatic tension, no injury, no gore, no weapons
+Negative: blurry, deformed face, extra eyes, extra limbs, bad anatomy, ugly, distorted, chibi style, super deformed, sketch, watercolor, gore, blood, wounds, weapons, explicit violence
+Generation mode: api_img2img
+Reference source: output/control/panel_001_layout.png
+Img2img strength: 0.34
+Control source: pil_fallback
+Control scene: output/control/panel_001_scene.json
+Seed: None
+Output: output/panel_1.png
+
+-- Export --
+Slice: output/export/manhwa_chapter_01.png

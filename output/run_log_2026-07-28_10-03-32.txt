@@ -1,0 +1,134 @@
+=== Manhwa Generation Run Log ===
+Timestamp: 2026-07-28_10-03-32
+Image backend: api
+Model: stabilityai/stable-diffusion-3.5-large
+Fallback model: runwayml/stable-diffusion-v1-5
+Image API provider: huggingface
+Image API model: black-forest-labs/FLUX.1-dev
+Image API size: 1024x1024
+Image API quality: medium
+Device: cpu
+LLM Model: meta-llama/Meta-Llama-3-8B-Instruct:novita
+Reference image: None
+Img2img strength: 0.38
+Blender control enabled: True
+Blender executable: blender
+Blender control strength: 0.34
+
+-- Story (~307 words) --
+Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven spread. Under a dramatic mood, streets hum with a action pulse. Jin discovers a clue—subtle as neon reflected in rain—leading closer to Raven. Promises linger; debts resurface. A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echoes against glass and concrete. Finally, Raven reveals a twist that forces Jin to reconsider allies, motives, and the cost of truth. In a brief stillness, Jin remembers why this began and what it must cost to finish. Whispers flow through stairwells, mapping a maze that returns always to the same door. Every clue ties to another, a knot tightening around Raven's name and the night itself. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. From the rooftop edge, Jin counts breaths, then leaps—not down, but toward an answer. Whispers flow through stairwells, mapping a maze that returns always to the same door. In a brief stillness, Jin remembers why this began and what it must cost to finish. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. Whispers flow through stairwells, mapping a maze that returns always to the same door. Street vendors pack in a hurry, trading rumors of Raven for folded bills and wary glances. Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve.
+
+
+-- Scenario --
+[
+  {
+    "context": "Episode 1: Rooftop Oath",
+    "scene": [
+      "rain",
+      "city",
+      "rooftop",
+      "street",
+      "neon"
+    ],
+    "speaker": "Raven",
+    "speech": "Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven sp"
+  },
+  {
+    "context": "A confrontation simmers in alleys and rooftops",
+    "scene": [
+      "night",
+      "alley",
+      "rooftop",
+      "ice"
+    ],
+    "speaker": "Raven",
+    "speech": "A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echo"
+  },
+  {
+    "context": "Every clue ties to another, a knot tightening around Raven's name and the night ",
+    "scene": [
+      "night",
+      "rain",
+      "city",
+      "rooftop",
+      "light"
+    ],
+    "speaker": "Raven",
+    "speech": "Every clue ties to another, a knot tightening around Raven's name and the night itself. Street vendo"
+  },
+  {
+    "context": "Rain scatters light into sharp shards; the city becomes a prism of suspicion and",
+    "scene": [
+      "rain",
+      "city",
+      "rooftop",
+      "light",
+      "street"
+    ],
+    "speaker": "Raven",
+    "speech": "Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. From the r"
+  }
+]
+
+
+-- Panel 1 --
+Context: Episode 1: Rooftop Oath
+Scene: rain, city, rooftop, street, neon
+Speaker: Raven
+Speech: Episode 1: Rooftop Oath. In the modern city at dusk, Jin moves with purpose while rumors of Raven sp
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_001_scene.json
+Error: Model black-forest-labs/FLUX.1-dev is not supported for task image-to-image and provider fal-ai. Supported task: text-to-image.
+Seed: None
+Output: output/panel_1.png
+
+-- Panel 2 --
+Context: A confrontation simmers in alleys and rooftops
+Scene: night, alley, rooftop, ice
+Speaker: Raven
+Speech: A confrontation simmers in alleys and rooftops. As the night deepens, choices narrow; each step echo
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_002_scene.json
+Error: Model black-forest-labs/FLUX.1-dev is not supported for task image-to-image and provider fal-ai. Supported task: text-to-image.
+Seed: None
+Output: output/panel_2.png
+
+-- Panel 3 --
+Context: Every clue ties to another, a knot tightening around Raven's name and the night 
+Scene: night, rain, city, rooftop, light
+Speaker: Raven
+Speech: Every clue ties to another, a knot tightening around Raven's name and the night itself. Street vendo
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_003_scene.json
+Error: Model black-forest-labs/FLUX.1-dev is not supported for task image-to-image and provider fal-ai. Supported task: text-to-image.
+Seed: None
+Output: output/panel_3.png
+
+-- Panel 4 --
+Context: Rain scatters light into sharp shards; the city becomes a prism of suspicion and
+Scene: rain, city, rooftop, light, street
+Speaker: Raven
+Speech: Rain scatters light into sharp shards; the city becomes a prism of suspicion and resolve. From the r
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_004_scene.json
+Error: Model black-forest-labs/FLUX.1-dev is not supported for task image-to-image and provider fal-ai. Supported task: text-to-image.
+Seed: None
+Output: output/panel_4.png
+
+-- Export --
+Slice: output/export/manhwa_chapter_01.png
+Slice: output/export/manhwa_chapter_02.png
+Slice: output/export/manhwa_chapter_03.png
+Slice: output/export/manhwa_chapter_04.png

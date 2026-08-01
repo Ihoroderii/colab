@@ -2,9 +2,22 @@
 from __future__ import annotations
 from typing import Optional
 import torch
-from diffusers import AutoPipelineForImage2Image, StableDiffusion3Pipeline, StableDiffusionPipeline
-from huggingface_hub.errors import GatedRepoError
-from requests.exceptions import HTTPError
+try:
+    from diffusers import AutoPipelineForImage2Image, StableDiffusion3Pipeline, StableDiffusionPipeline
+except ImportError:
+    AutoPipelineForImage2Image = None
+    StableDiffusion3Pipeline = None
+    StableDiffusionPipeline = None
+try:
+    from huggingface_hub.errors import GatedRepoError
+except ImportError:
+    class GatedRepoError(Exception):
+        pass
+try:
+    from requests.exceptions import HTTPError
+except ImportError:
+    class HTTPError(Exception):
+        pass
 
 
 def select_device_and_dtype(preferred: str) -> tuple[str, torch.dtype]:
@@ -22,6 +35,9 @@ def load_pipeline_with_fallback(
     token: Optional[str],
     fallback_model: str = "runwayml/stable-diffusion-v1-5",
 ):
+    if StableDiffusionPipeline is None or StableDiffusion3Pipeline is None:
+        raise ImportError("diffusers is required for image generation. Install project requirements first.")
+
     def _load(model: str):
         print(f"Loading model {model} on {device} with dtype {dtype}")
         if "stable-diffusion-3" in model:
@@ -46,6 +62,9 @@ def load_img2img_pipeline_with_fallback(
     token: Optional[str],
     fallback_model: str = "runwayml/stable-diffusion-v1-5",
 ):
+    if AutoPipelineForImage2Image is None:
+        raise ImportError("diffusers is required for img2img generation. Install project requirements first.")
+
     def _load(model: str):
         print(f"Loading img2img model {model} on {device} with dtype {dtype}")
         kwargs = {"torch_dtype": dtype, "token": token}

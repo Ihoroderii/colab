@@ -3,27 +3,125 @@ Run with: python -m manga_ai
 """
 from __future__ import annotations
 import os, datetime, json, random, logging
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import cv2
 import torch
 from PIL import Image, ImageDraw, ImageOps
-from openai import OpenAI
 
 from ..config import Config
 from ..cli import parse_args, update_config_from_args
 from ..pipelines.diffusion import get_cached_img2img_pipeline, get_cached_pipeline, select_device_and_dtype
 from ..pipelines.scenario import generate_scenario, synthesize_prose_story, generate_story, panels_from_story
+from ..pipelines.blender_control import render_control_image
+from ..pipelines.image_api import generate_image_with_api
+from ..pipelines.llm_api import create_llm_client
 from ..effects.style import ManhwaStyler
 from ..effects.text import ManhwaEffects
+from ..integrations.bubbles import BubbleCharacter, BubbleLine, apply_manhwa_bubbles
 from ..pipelines.assemble import ManhwaAssembler
 from ..utils.prompts import get_manhwa_prompts
 from ..utils.validator import PanelValidator
 from ..utils.export import export_webtoon
 from ..utils.detect import detect_faces_and_people
+from ..post_processing import (
+    StyleNormalizationSettings,
+    normalize_completed_page,
+    normalize_panel_image,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _style_normalization_settings(config: Config) -> StyleNormalizationSettings:
+    norm = getattr(config, "style_normalization", None)
+    return StyleNormalizationSettings(
+        style_id=getattr(norm, "style_id", "manga_bw_v1"),
+        width=int(getattr(norm, "width", 768)),
+        height=int(getattr(norm, "height", 1024)),
+        gamma=float(getattr(norm, "gamma", 0.96)),
+        contrast=float(getattr(norm, "contrast", 1.08)),
+        autocontrast_cutoff=float(getattr(norm, "autocontrast_cutoff", 1.0)),
+        sharpen_radius=float(getattr(norm, "sharpen_radius", 1.2)),
+        sharpen_percent=int(getattr(norm, "sharpen_percent", 110)),
+        sharpen_threshold=int(getattr(norm, "sharpen_threshold", 3)),
+        grain_strength=float(getattr(norm, "grain_strength", 0.02)),
+        screentone_style=getattr(norm, "screentone_style", "dots_medium"),
+        page_autocontrast_cutoff=float(getattr(norm, "page_autocontrast_cutoff", 0.3)),
+        page_contrast=float(getattr(norm, "page_contrast", 1.02)),
+    )
+
+
+def _apply_reference_style_normalization(config: Config, image: Image.Image) -> Image.Image:
+    if not getattr(config.style_normalization, "enabled", False):
+        return image
+    reference_path = Path(getattr(config.style_normalization, "reference_path", "references/manga_style_reference.png"))
+    if not reference_path.exists():
+        logger.warning("Style normalization enabled but reference image not found: %s", reference_path)
+        return image
+    try:
+        result = normalize_panel_image(
+            image,
+            Image.open(reference_path).convert("RGB"),
+            _style_normalization_settings(config),
+        )
+        logger.info("Applied style normalization using %s", reference_path)
+        return result
+    except Exception as e:
+        logger.warning("Style normalization failed, using unnormalized panel: %s", e)
+        return image
+
+
+def _apply_configured_bubbles(
+    config: Config,
+    styler: ManhwaStyler,
+    image: Image.Image,
+    text: str,
+    speaker: str | None,
+    bubble_type: str,
+    position: tuple[int, int],
+) -> Image.Image:
+    if getattr(config.bubbles, "backend", "internal") == "manhwa_bubbles":
+        try:
+            x, y = position
+            head_x = max(20, min(image.width - 20, x + min(180, image.width // 4)))
+            head_y = max(80, min(image.height - 80, y + min(260, image.height // 3)))
+            box_w = max(90, image.width // 7)
+            box_h = max(220, image.height // 3)
+            characters = []
+            if speaker and speaker.lower() not in ("narrator", "narration"):
+                characters.append(
+                    BubbleCharacter(
+                        name=speaker,
+                        bbox=(
+                            max(0, head_x - box_w // 2),
+                            max(0, head_y - 40),
+                            min(image.width, head_x + box_w // 2),
+                            min(image.height, head_y + box_h),
+                        ),
+                        head=(head_x, head_y),
+                    )
+                )
+            return apply_manhwa_bubbles(
+                image,
+                [
+                    BubbleLine(
+                        speaker=speaker,
+                        text=text,
+                        kind=bubble_type,
+                        position_hint="left" if position[0] < image.width // 2 else "right",
+                    )
+                ],
+                characters=characters,
+                config=config,
+            )
+        except Exception as e:
+            logger.warning("manhwa_bubbles backend failed, using internal bubble renderer: %s", e)
+            if not getattr(config.bubbles, "fallback_to_internal", True):
+                raise
+    return styler.add_text(image, text, speaker=speaker, bubble_type=bubble_type, position=position)
 
 
 def _init_logging():
@@ -196,6 +294,8 @@ def _generate_panel(
     speaker: str,
     speech_text: str,
     reference_image: Image.Image | None = None,
+    reference_source: str | None = None,
+    img2img_strength: float | None = None,
 ):
     keypoints = _text_to_pose(scene_prompt)
     pose_image = _draw_pose(keypoints)
@@ -237,63 +337,85 @@ def _generate_panel(
         gen_side = _round_to_multiple(gen_side, 8)
         gen_kwargs.update({"width": gen_side, "height": gen_side})
 
-    if reference_image is not None:
-        pipeline, (device, dtype) = get_cached_img2img_pipeline(
-            config.model.stable_diffusion_model,
-            config.model.device,
-            (config.model.REMOVED_TOKENtoken or None),
-            getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
+    seed = None
+    effective_strength = None
+    if getattr(config.model, "image_backend", "local") == "api":
+        result_img = generate_image_with_api(
+            config,
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            reference_image=reference_image,
         )
+        generation_mode = "api_img2img" if reference_image is not None else "api_txt2img"
+        if reference_image is not None:
+            effective_strength = float(
+                img2img_strength
+                if img2img_strength is not None
+                else getattr(config.reference, "img2img_strength", 0.38) or 0.38
+            )
     else:
-        pipeline, (device, dtype) = get_cached_pipeline(
-            config.model.stable_diffusion_model,
-            config.model.device,
-            (config.model.REMOVED_TOKENtoken or None),
-            getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
-        )
-
-    seed = random.randint(0, 2**32 - 1)
-    generator = torch.Generator(device=device).manual_seed(seed)
-
-    if reference_image is not None:
-        if square_mode:
-            ref_size = (gen_kwargs.get("width", target_width), gen_kwargs.get("height", target_width))
+        if reference_image is not None:
+            pipeline, (device, dtype) = get_cached_img2img_pipeline(
+                config.model.stable_diffusion_model,
+                config.model.device,
+                (config.model.REMOVED_TOKENtoken or None),
+                getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
+            )
         else:
-            ratio = reference_image.height / max(1, reference_image.width)
-            ref_size = (target_width, max(256, int(target_width * ratio)))
-        conditioned_image = _prepare_reference_image(
-            reference_image,
-            ref_size,
-            getattr(config.reference, "resize_mode", "fit"),
-        )
-        strength = float(getattr(config.reference, "img2img_strength", 0.38) or 0.38)
-        strength = max(0.0, min(1.0, strength))
-        result_img = pipeline(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            image=conditioned_image,
-            strength=strength,
-            guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
-            num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
-            generator=generator,
-        ).images[0]
-        generation_mode = "img2img"
-    else:
-        result_img = pipeline(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
-            num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
-            generator=generator,
-            **gen_kwargs,
-        ).images[0]
-        generation_mode = "txt2img"
+            pipeline, (device, dtype) = get_cached_pipeline(
+                config.model.stable_diffusion_model,
+                config.model.device,
+                (config.model.REMOVED_TOKENtoken or None),
+                getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
+            )
+
+        seed = random.randint(0, 2**32 - 1)
+        generator = torch.Generator(device=device).manual_seed(seed)
+
+        if reference_image is not None:
+            if square_mode:
+                ref_size = (gen_kwargs.get("width", target_width), gen_kwargs.get("height", target_width))
+            else:
+                ratio = reference_image.height / max(1, reference_image.width)
+                ref_size = (target_width, max(256, int(target_width * ratio)))
+            conditioned_image = _prepare_reference_image(
+                reference_image,
+                ref_size,
+                getattr(config.reference, "resize_mode", "fit"),
+            )
+            effective_strength = float(
+                img2img_strength
+                if img2img_strength is not None
+                else getattr(config.reference, "img2img_strength", 0.38) or 0.38
+            )
+            effective_strength = max(0.0, min(1.0, effective_strength))
+            result_img = pipeline(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                image=conditioned_image,
+                strength=effective_strength,
+                guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
+                num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
+                generator=generator,
+            ).images[0]
+            generation_mode = "img2img"
+        else:
+            result_img = pipeline(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
+                num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
+                generator=generator,
+                **gen_kwargs,
+            ).images[0]
+            generation_mode = "txt2img"
 
     styler = ManhwaStyler()
     # If not square mode, do the classic aspect-based resize. Square mode already sized at generation.
     if not square_mode:
         result_img = styler.adjust_panel(result_img, target_width=target_width)
     result_img = styler.apply_style(result_img)
+    result_img = _apply_reference_style_normalization(config, result_img)
     # Optional square padding
     if getattr(config.style, "square_panels", False):
         try:
@@ -355,7 +477,15 @@ def _generate_panel(
         except Exception as e:
             logger.debug(f"Detection failed or unavailable: {e}")
 
-    result_img = styler.add_text(result_img, speech_text, speaker=speaker, bubble_type=bubble_type, position=position)
+    result_img = _apply_configured_bubbles(
+        config,
+        styler,
+        result_img,
+        speech_text,
+        speaker,
+        bubble_type,
+        position,
+    )
     # Add border around panel if configured
     try:
         bw = int(getattr(config.style, "panel_border_width", 0) or 0)
@@ -379,6 +509,9 @@ def _generate_panel(
         "prompt": prompt,
         "negative_prompt": negative_prompt,
         "generation_mode": generation_mode,
+        "reference_source": reference_source,
+        "img2img_strength": effective_strength,
+        "bubble_backend": getattr(config.bubbles, "backend", "internal"),
     }
 
 
@@ -406,55 +539,104 @@ def render_panel_spec(
     Returns:
         (PIL.Image, metadata_dict)
     """
-    pipeline, (device, dtype) = get_cached_pipeline(
-        config.model.stable_diffusion_model,
-        config.model.device,
-        (config.model.REMOVED_TOKENtoken or None),
-        getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
-    )
-
     prompt = panel_spec.get("prompt_positive", "")
     negative = panel_spec.get("prompt_negative", "")
     if not prompt:
         raise ValueError("panel_spec must contain a non-empty prompt_positive")
 
-    seed = random.randint(0, 2**32 - 1)
-    generator = torch.Generator(device=device).manual_seed(seed)
-
-    gen_kwargs = {"width": 768, "height": 1024}
-
-    # IP-Adapter conditioning if pipeline supports it and images are provided
-    if ip_adapter_images and hasattr(pipeline, "set_ip_adapter_scale"):
+    control_result = None
+    if getattr(config.blender, "enabled", False):
+        control_panel = {
+            "context": panel_spec.get("location_id") or panel_spec.get("setting") or "",
+            "scene": [
+                panel_spec.get("shot_type", ""),
+                panel_spec.get("camera_angle", ""),
+                prompt,
+            ],
+            "speaker": "",
+            "speech": "",
+        }
         try:
-            pipeline.set_ip_adapter_scale(0.6)
-            if len(ip_adapter_images) == 1:
-                gen_kwargs["ip_adapter_image"] = ip_adapter_images[0]
-            else:
-                gen_kwargs["ip_adapter_image"] = ip_adapter_images
-        except Exception as e:
-            logger.debug("IP-Adapter not available: %s", e)
+            panel_number = int(str(panel_spec.get("panel_id") or "1").split("_")[-1])
+        except Exception:
+            panel_number = 1
+        control_result = render_control_image(config, control_panel, panel_number, config.output.output_dir)
 
-    result_img = pipeline(
-        prompt=prompt,
-        negative_prompt=negative,
-        guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
-        num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
-        generator=generator,
-        **gen_kwargs,
-    ).images[0]
+    seed = random.randint(0, 2**32 - 1)
+    if getattr(config.model, "image_backend", "local") == "api":
+        result_img = generate_image_with_api(
+            config,
+            prompt=prompt,
+            negative_prompt=negative,
+            reference_image=control_result.image if control_result is not None else None,
+        )
+        generation_mode = "api_img2img" if control_result is not None else "api_txt2img"
+    elif control_result is not None:
+        pipeline, (device, dtype) = get_cached_img2img_pipeline(
+            config.model.stable_diffusion_model,
+            config.model.device,
+            (config.model.REMOVED_TOKENtoken or None),
+            getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
+        )
+        generator = torch.Generator(device=device).manual_seed(seed)
+        conditioned_image = _prepare_reference_image(control_result.image, (768, 1024), "fit")
+        result_img = pipeline(
+            prompt=prompt,
+            negative_prompt=negative,
+            image=conditioned_image,
+            strength=max(0.0, min(1.0, float(getattr(config.blender, "img2img_strength", 0.34)))),
+            guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
+            num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
+            generator=generator,
+        ).images[0]
+        generation_mode = "img2img"
+    else:
+        pipeline, (device, dtype) = get_cached_pipeline(
+            config.model.stable_diffusion_model,
+            config.model.device,
+            (config.model.REMOVED_TOKENtoken or None),
+            getattr(config.model, "fallback_diffusion_model", "runwayml/stable-diffusion-v1-5"),
+        )
+        generator = torch.Generator(device=device).manual_seed(seed)
+        gen_kwargs = {"width": 768, "height": 1024}
+
+        # IP-Adapter conditioning if pipeline supports it and images are provided
+        if ip_adapter_images and hasattr(pipeline, "set_ip_adapter_scale"):
+            try:
+                pipeline.set_ip_adapter_scale(0.6)
+                if len(ip_adapter_images) == 1:
+                    gen_kwargs["ip_adapter_image"] = ip_adapter_images[0]
+                else:
+                    gen_kwargs["ip_adapter_image"] = ip_adapter_images
+            except Exception as e:
+                logger.debug("IP-Adapter not available: %s", e)
+
+        result_img = pipeline(
+            prompt=prompt,
+            negative_prompt=negative,
+            guidance_scale=getattr(config.generation, "guidance_scale", 7.5),
+            num_inference_steps=getattr(config.generation, "num_inference_steps", 50),
+            generator=generator,
+            **gen_kwargs,
+        ).images[0]
+        generation_mode = "txt2img"
 
     styler = ManhwaStyler()
     result_img = styler.apply_style(result_img)
+    result_img = _apply_reference_style_normalization(config, result_img)
 
     meta = {
         "seed": seed,
         "prompt": prompt,
         "negative_prompt": negative,
         "panel_id": panel_spec.get("panel_id"),
+        "generation_mode": generation_mode,
         "shot_type": panel_spec.get("shot_type"),
         "camera_angle": panel_spec.get("camera_angle"),
         "characters": [c.get("character_id", "") for c in panel_spec.get("characters", [])],
         "location_id": panel_spec.get("location_id", ""),
+        "control_image": control_result.image_path if control_result is not None else None,
+        "control_source": control_result.source if control_result is not None else None,
     }
     return result_img, meta
 
@@ -463,7 +645,17 @@ def main():
     _init_logging()
     config = _init_config()
     os.makedirs(config.output.output_dir, exist_ok=True)
-    logger.info(f"Using diffusion model: {config.model.stable_diffusion_model}")
+    logger.info("Image backend: %s", getattr(config.model, "image_backend", "local"))
+    if getattr(config.model, "image_backend", "local") == "api":
+        logger.info(
+            "Using image API: provider=%s model=%s size=%s quality=%s",
+            getattr(config.image_api, "provider", "openai"),
+            getattr(config.image_api, "model", "gpt-image-1"),
+            getattr(config.image_api, "size", "1024x1024"),
+            getattr(config.image_api, "quality", "medium"),
+        )
+    else:
+        logger.info(f"Using diffusion model: {config.model.stable_diffusion_model}")
     logger.info(f"Preferred device: {config.model.device}")
     try:
         logger.info(
@@ -501,10 +693,35 @@ def main():
             getattr(config.reference, "img2img_strength", 0.38),
             getattr(config.reference, "resize_mode", "fit"),
         )
+    if getattr(config.blender, "enabled", False):
+        logger.info(
+            "Blender control enabled: executable=%s size=%sx%s strength=%s fallback=%s",
+            getattr(config.blender, "executable", "blender"),
+            getattr(config.blender, "render_width", 768),
+            getattr(config.blender, "render_height", 1024),
+            getattr(config.blender, "img2img_strength", 0.34),
+            getattr(config.blender, "fallback_to_pil", True),
+        )
+    if getattr(config.style_normalization, "enabled", False):
+        logger.info(
+            "Style normalization enabled: reference=%s size=%sx%s",
+            getattr(config.style_normalization, "reference_path", "references/manga_style_reference.png"),
+            getattr(config.style_normalization, "width", 768),
+            getattr(config.style_normalization, "height", 1024),
+        )
+    logger.info(
+        "Bubble backend: %s (project_path=%s fallback=%s)",
+        getattr(config.bubbles, "backend", "internal"),
+        getattr(config.bubbles, "project_path", "../bubble"),
+        getattr(config.bubbles, "fallback_to_internal", True),
+    )
 
-    client = None
-    if config.model.REMOVED_TOKENtoken:
-        client = OpenAI(base_url="https://router.huggingface.co/v1", api_key=config.model.REMOVED_TOKENtoken)
+    try:
+        client = create_llm_client(config)
+        logger.info("LLM provider: %s", getattr(config.model, "llm_provider", "huggingface"))
+    except Exception as e:
+        client = None
+        logger.warning("LLM client setup failed, using fallback story/scenario generation: %s", e)
 
     logger.info("Generating ~300-word story first...")
     story_txt = generate_story(config, client, target_words=300)
@@ -541,12 +758,20 @@ def main():
     with open(run_log_path, "w", encoding="utf-8") as f:
         f.write("=== Manhwa Generation Run Log ===\n")
         f.write(f"Timestamp: {run_ts}\n")
+        f.write(f"Image backend: {getattr(config.model, 'image_backend', 'local')}\n")
         f.write(f"Model: {config.model.stable_diffusion_model}\n")
         f.write(f"Fallback model: {getattr(config.model, 'fallback_diffusion_model', None)}\n")
+        f.write(f"Image API provider: {getattr(config.image_api, 'provider', None)}\n")
+        f.write(f"Image API model: {getattr(config.image_api, 'model', None)}\n")
+        f.write(f"Image API size: {getattr(config.image_api, 'size', None)}\n")
+        f.write(f"Image API quality: {getattr(config.image_api, 'quality', None)}\n")
         f.write(f"Device: {config.model.device}\n")
         f.write(f"LLM Model: {config.model.llm_model}\n")
         f.write(f"Reference image: {getattr(config.reference, 'image_path', None)}\n")
         f.write(f"Img2img strength: {getattr(config.reference, 'img2img_strength', None)}\n")
+        f.write(f"Blender control enabled: {getattr(config.blender, 'enabled', False)}\n")
+        f.write(f"Blender executable: {getattr(config.blender, 'executable', None)}\n")
+        f.write(f"Blender control strength: {getattr(config.blender, 'img2img_strength', None)}\n")
         # Story section
         try:
             _wc = len(story_txt.split())
@@ -590,8 +815,37 @@ def main():
         speaker = sc.get("speaker", "Narrator")
         speech = sc.get("speech", "")
 
+        panel_reference = reference_image
+        panel_reference_source = getattr(config.reference, "image_path", None)
+        panel_reference_strength = None
+        control_result = None
+        if getattr(config.blender, "enabled", False):
+            try:
+                control_result = render_control_image(config, sc, i, config.output.output_dir)
+                if control_result is not None:
+                    panel_reference = control_result.image
+                    panel_reference_source = control_result.image_path
+                    panel_reference_strength = float(getattr(config.blender, "img2img_strength", 0.34))
+                    logger.info(
+                        "Panel %s control image: %s (%s)",
+                        i,
+                        control_result.image_path,
+                        control_result.source,
+                    )
+            except Exception as e:
+                logger.warning("Panel %s control render failed, using normal reference path: %s", i, e)
+
         try:
-            panel, meta = _generate_panel(config, context, scene, speaker, speech, reference_image=reference_image)
+            panel, meta = _generate_panel(
+                config,
+                context,
+                scene,
+                speaker,
+                speech,
+                reference_image=panel_reference,
+                reference_source=panel_reference_source,
+                img2img_strength=panel_reference_strength,
+            )
         except Exception as e:
             logger.error(f"Panel {i} generation failed: {e}")
             panel = Image.new("RGB", (768, 1024), color=(32, 32, 32))
@@ -635,6 +889,13 @@ def main():
             f.write(f"Prompt: {meta.get('prompt')}\n")
             f.write(f"Negative: {meta.get('negative_prompt')}\n")
             f.write(f"Generation mode: {meta.get('generation_mode')}\n")
+            if meta.get("reference_source"):
+                f.write(f"Reference source: {meta.get('reference_source')}\n")
+            if meta.get("img2img_strength") is not None:
+                f.write(f"Img2img strength: {meta.get('img2img_strength')}\n")
+            if control_result is not None:
+                f.write(f"Control source: {control_result.source}\n")
+                f.write(f"Control scene: {control_result.metadata_path}\n")
             if meta.get("error"):
                 f.write(f"Error: {meta.get('error')}\n")
             f.write(f"Seed: {meta.get('seed')}\n")
@@ -655,6 +916,12 @@ def main():
     else:
         final_img = Image.new("RGB", (768, 1024), color=(20, 20, 20))
         final_img.save(chapter_path)
+    if getattr(config.style_normalization, "enabled", False):
+        try:
+            normalize_completed_page(Path(chapter_path), Path(chapter_path), _style_normalization_settings(config))
+            logger.info("Applied page-wide style normalization to %s", chapter_path)
+        except Exception as e:
+            logger.warning("Page-wide style normalization failed: %s", e)
     logger.info("Generation complete!")
 
     if getattr(config, "export", None) and config.export.enabled:

@@ -1,0 +1,64 @@
+=== Manhwa Generation Run Log ===
+Timestamp: 2026-07-29_12-40-16
+Image backend: api
+Model: stabilityai/stable-diffusion-3.5-large
+Fallback model: runwayml/stable-diffusion-v1-5
+Image API provider: cloudflare
+Image API model: @cf/black-forest-labs/flux-2-klein-4b
+Image API size: 1024x1024
+Image API quality: medium
+Device: cpu
+LLM Model: @cf/meta/llama-3.1-8b-instruct
+Reference image: None
+Img2img strength: 0.38
+Blender control enabled: True
+Blender executable: blender
+Blender control strength: 0.34
+
+-- Story (~443 words) --
+The sun had just dipped below the horizon, casting a warm orange glow over the concrete jungle of the city. Jin stood at the edge of a rooftop, his eyes fixed on the towering skyscrapers that seemed to stretch on forever. He was a man of few words, but his actions spoke louder than any phrase ever could. His dark hair was slicked back, revealing a sharp jawline and piercing blue eyes that seemed to bore into the very soul of anyone who dared to cross him.
+
+Jin's thoughts were consumed by the mysterious figure known only as Raven, a shadowy assassin who had been terrorizing the city's underworld for months. No one knew much about Raven, only that their skills were unmatched and their reputation was one of fear and respect. Jin, on the other hand, was a ghost - a former soldier turned mercenary, driven by a need for justice in a world that often seemed devoid of it.
+
+As Jin stood there, lost in thought, a figure emerged from the shadows. It was a young woman, her long black hair tied back in a ponytail and her eyes gleaming with a fierce determination. Her name was Lena, a skilled hacker and one of Jin's closest allies. "Jin, we've got a lead on Raven," she said, her voice barely above a whisper. "Meet me at the old warehouse on 5th and Main at midnight. We'll take them down together."
+
+Jin's eyes narrowed as he turned to face Lena. He knew that taking on Raven would be a daunting task, but he also knew that he couldn't back down now. He nodded once, a curt gesture that spoke volumes. "I'll be there," he said, his voice low and deadly.
+
+As Lena disappeared into the night, Jin's thoughts turned to the rooftop below. He could see the city's neon lights reflected off the wet pavement, a kaleidoscope of color that seemed to pulse with an energy all its own. But Jin's eyes were fixed on the darkness beyond the city's limits, where Raven lurked like a ghost. He knew that their paths would cross soon, and when they did, only one of them would walk away unscathed.
+
+Jin's phone buzzed in his pocket, a text message from an unknown number flashing on the screen. His heart skipped a beat as he read the words, his mind racing with the implications. "Meet me at the rooftop of the Imperial Tower at midnight," the message read. "Come alone." Jin's eyes narrowed, his grip on the phone tightening. Who was behind this message, and what did they want from him? Only one way to find out.
+
+
+-- Scenario --
+[
+  {
+    "context": "The sun had just dipped below the horizon, casting a warm orange glow over the c",
+    "scene": [
+      "night",
+      "city",
+      "rooftop",
+      "shadow",
+      "glow"
+    ],
+    "speaker": "he",
+    "speech": "Jin, we've got a lead on Raven,"
+  }
+]
+
+
+-- Panel 1 --
+Context: The sun had just dipped below the horizon, casting a warm orange glow over the c
+Scene: night, city, rooftop, shadow, glow
+Speaker: he
+Speech: Jin, we've got a lead on Raven,
+Prompt: None
+Negative: None
+Generation mode: failed
+Control source: pil_fallback
+Control scene: output/control/panel_001_scene.json
+Error: Cloudflare image request failed: 400 {"errors":[{"message":"AiError: AiError: Your output has been flagged. Please choose another prompt / input image combination (b1e4f313-7760-428f-95df-4cf69d69aaee)","code":3030}],"success":false,"result":{},"messages":[]}
+Seed: None
+Output: output/panel_1.png
+
+-- Export --
+Slice: output/export/manhwa_chapter_01.png
